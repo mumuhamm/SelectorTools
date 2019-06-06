@@ -170,7 +170,7 @@ def getListOfHDFSFiles(file_path):
 def getMCInfo(filelist, selection, manager_path=""):
     if manager_path is "":
         manager_path = getManagerPath()
-    data_path = "%s/ZZ4lAnalysisDatasetManager/FileInfo" % manager_path
+    data_path = "%s/AnalysisDatasetManager/FileInfo" % manager_path
     data_info = UserInput.readAllJson("/".join([data_path, "%s.json" % "data/*"]))
     mc_info = UserInput.readAllJson("/".join([data_path, "%s.json" % "montecarlo/*"]))
     
@@ -178,7 +178,7 @@ def getMCInfo(filelist, selection, manager_path=""):
 def getListOfFiles(filelist, selection, manager_path=""):
     if manager_path is "":
         manager_path = getManagerPath()
-    data_path = "%s/ZZ4lAnalysisDatasetManager/FileInfo" % manager_path
+    data_path = "%s/AnalysisDatasetManager/FileInfo" % manager_path
     data_info = UserInput.readAllJson("/".join([data_path, "%s.json" % "data/*"]))
     mc_info = UserInput.readAllJson("/".join([data_path, "%s.json" % "montecarlo/*"]))
     valid_names = data_info.keys() + mc_info.keys()
@@ -187,7 +187,7 @@ def getListOfFiles(filelist, selection, manager_path=""):
     for name in filelist:
         if "ZZ4l2018" in name:
             dataset_file = manager_path + \
-                "ZZ4lAnalysisDatasetManager/FileInfo/ZZ4l2018/%s.json" % selection
+                "AnalysisDatasetManager/FileInfo/ZZ4l2018/%s.json" % selection
             allnames = json.load(open(dataset_file)).keys()
             print allnames
             if "nodata" in name:
@@ -199,7 +199,7 @@ def getListOfFiles(filelist, selection, manager_path=""):
                 names += allnames
         elif "ZZ4l2019" in name:
             dataset_file = manager_path + \
-                "ZZ4lAnalysisDatasetManager/FileInfo/ZZ4l2019/%s.json" % selection
+                "AnalysisDatasetManager/FileInfo/ZZ4l2019/%s.json" % selection
             allnames = json.load(open(dataset_file)).keys()
             print allnames
             if "nodata" in name:
@@ -228,7 +228,7 @@ def fillTemplatedFile(template_file_name, out_file_name, template_dict):
 def getListOfFilesWithXSec(filelist, manager_path=""):
     if manager_path is "":
         manager_path = getManagerPath()
-    data_path = "%s/ZZ4lAnalysisDatasetManager/FileInfo" % manager_path
+    data_path = "%s/AnalysisDatasetManager/FileInfo" % manager_path
     files = getListOfFiles(filelist, "ntuples", manager_path)
     #files = getListOfFiles(filelist, "2018Data", manager_path)
     mc_info = UserInput.readAllJson("/".join([data_path, "%s.json" % "montecarlo/*"]))
@@ -281,7 +281,7 @@ def getPreviousStep(selection, analysis):
 def getInputFilesPath(sample_name, selection, analysis, manager_path=""):
     if manager_path is "":
         manager_path = getManagerPath()
-    data_path = "%s/ZZ4lAnalysisDatasetManager/FileInfo" % manager_path
+    data_path = "%s/AnalysisDatasetManager/FileInfo" % manager_path
     input_file_name = "/".join([data_path, analysis, "%s.json" %
         selection])
     input_files = UserInput.readJson(input_file_name)

@@ -15,6 +15,7 @@ import sys
 import datetime
 import array
 from ROOT import vector as Vec
+import imp
 VFloat = Vec('float')
 
 style = Style()
@@ -42,7 +43,7 @@ def getComLineArgs():
     parser.add_argument("-b", "--hist_names", 
                         type=lambda x : [i.strip() for i in x.split(',')],
                         default=["all"], help="List of histograms, "
-                        "as defined in ZZ4lAnalysisDatasetManager, separated "
+                        "as defined in AnalysisDatasetManager, separated "
                         "by commas")
     #parser.add_argument('--variables', type=str, nargs='*',
     #                    default="Mass",
@@ -82,8 +83,9 @@ args = getComLineArgs()
 
 manager_path = ConfigureJobs.getManagerPath()
 sys.path.append("/".join([manager_path, 
-    "ZZ4lAnalysisDatasetManager", "Utilities/python"]))
-import ConfigHistTools 
+    "AnalysisDatasetManager", "Utilities/python"]))
+ConfigHistTools = imp.load_source("ConfigHistTools", 
+                "/".join([manager_path, "AnalysisDatasetManager/Utilities/python/ConfigHistTools.py"]))
 
 today = datetime.date.today().strftime("%d%b%Y")
 tmpFileName = "HistFiles/Hists%s-%s.root" % (today, args['leptonSelections']) if args['output_file'] == "" \
