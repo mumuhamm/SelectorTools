@@ -300,6 +300,7 @@ class SelectorBase : public TSelector {
     void InitializeHistogramsFromConfig();
     std::vector<std::string> ReadHistDataFromConfig(std::string histDataString);
     std::string concatenateNames(const char* baseName, std::string& toAppend);
+    std::string concatenateNames(const std::string& baseName, const char* toAppend);
     std::string concatenateNames(const std::string& baseName, std::string& toAppend);
     std::string getHistName(std::string histName, std::string variationName);
     std::string getHistName(std::string histName, std::string variationName, std::string channel);

@@ -29,6 +29,9 @@ public :
     reco::GenParticleCollection leptons;
     reco::GenParticleCollection bareLeptons;
     reco::GenParticleCollection dressedLeptons;
+    reco::GenParticleCollection bornLeptons;
+    reco::GenParticleCollection bornNeutrinos;
+    reco::GenParticleCollection fsneutrinos;
     reco::GenParticleCollection neutrinos;
     reco::GenParticleCollection photons;
     std::vector<LorentzVector> jets;
@@ -44,7 +47,7 @@ public :
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
     bool doBareLeptons_ = false;
-    bool doBornLeptons_ = false;
+    bool doBorn_ = false;
     bool doPhotons_ = false;
     bool doNeutrinos_ = false;
 
@@ -75,6 +78,7 @@ public :
     TTreeReaderArray<Float_t> GenPart_mass = {fReader, "GenPart_mass"};
     TTreeReaderArray<Int_t> GenPart_pdgId = {fReader, "GenPart_pdgId"};
     TTreeReaderArray<Int_t> GenPart_status = {fReader, "GenPart_status"};
+    TTreeReaderArray<Int_t> GenPart_statusFlags = {fReader, "GenPart_statusFlags"};
     TTreeReaderValue<UInt_t> nGenJet = {fReader, "nGenJet"};
     TTreeReaderArray<Float_t> GenJet_pt = {fReader, "GenJet_pt"};
     TTreeReaderArray<Float_t> GenJet_eta = {fReader, "GenJet_eta"};

@@ -15,9 +15,9 @@ void NanoGenSelectorBase::Init(TTree *tree)
         pdfweightshelper_.Init(N_LHEPDF_WEIGHTS_, N_MC2HESSIAN_WEIGHTS_, mc2hessianCSV);
     // NNLOPSLike is just a config name for one MiNNLO sample
     if (name_.find("nnlops") != std::string::npos && name_.find("nnlopslike") == std::string::npos) {
-        std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
-        //nnlops_ = true;
-        //std::cout << "INFO: NNLOPS sample will be weighted by NNLO weight\n";
+        //std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
+        nnlops_ = true;
+        std::cout << "INFO: NNLOPS sample will be weighted by NNLO weight\n";
     }
     fReader.SetTree(tree);
 }
@@ -31,6 +31,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
 
     channel_ = channelMap_[channelName_];
 
+    bornLeptons.clear();
+    bornNeutrinos.clear();
     dressedLeptons.clear();
     jets.clear();
 
@@ -47,15 +49,16 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
         dressedLeptons.emplace_back(reco::GenParticle(charge, vec, reco::Particle::Point(), GenDressedLepton_pdgId.At(i), 1, true));
     } // No need to sort, they're already pt sorted
     
-    if (doBareLeptons_ || doBornLeptons_ || doNeutrinos_ || doPhotons_) {
+    if (doBareLeptons_ || doBorn_ || doNeutrinos_ || doPhotons_) {
         bareLeptons.clear();
-        neutrinos.clear();
+        fsneutrinos.clear();
         std::vector<unsigned int> idsToKeep = {11, 12, 13, 14};
         if (doPhotons_)
             idsToKeep.push_back(22);
 
         for (size_t i = 0; i < *nGenPart; i++) {
-            if (GenPart_status.At(i) != 1)
+            bool isHardProcess = (GenPart_statusFlags.At(i) >> 7) & 1;
+            if ((doBorn_ && !isHardProcess) || GenPart_status.At(i) != 1)
                 continue;
             LorentzVector vec;
             if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(GenPart_pdgId.At(i))) != idsToKeep.end()) {
@@ -66,18 +69,29 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
             }
             if (std::abs(GenPart_pdgId.At(i)) == 11 || std::abs(GenPart_pdgId.At(i)) == 13) {
                 int charge = (GenPart_pdgId.At(i) < 0) ? 1: -1;
-                bareLeptons.emplace_back(reco::GenParticle(charge, vec, reco::Particle::Point(), GenPart_pdgId.At(i), GenPart_status.At(i), true));
+                auto lep = reco::GenParticle(charge, vec, reco::Particle::Point(), GenPart_pdgId.At(i), GenPart_status.At(i), true);
+                if (isHardProcess)
+                    bornLeptons.emplace_back(lep);
+                if (GenPart_status.At(i) == 1)
+                    bareLeptons.emplace_back(lep);
             }
             else if (std::abs(GenPart_pdgId.At(i)) == 12 || std::abs(GenPart_pdgId.At(i)) == 14) {
-                neutrinos.emplace_back(reco::GenParticle(0, vec, reco::Particle::Point(), GenPart_pdgId.At(i), GenPart_status.At(i), true));
+                auto neutrino = reco::GenParticle(0, vec, reco::Particle::Point(), GenPart_pdgId.At(i), GenPart_status.At(i), true);
+                if (isHardProcess)
+                    bornNeutrinos.emplace_back(neutrino);
+                if (GenPart_status.At(i) == 1)
+                    fsneutrinos.emplace_back(neutrino);
             }
             else if (std::abs(GenPart_pdgId.At(i)) == 22) {
                 photons.emplace_back(reco::GenParticle(0, vec, reco::Particle::Point(), GenPart_pdgId.At(i), GenPart_status.At(i), true));
             }
         }
+        neutrinos = fsneutrinos;
         
-        auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() > b.pt(); };
-        std::sort(bareLeptons.begin(), bareLeptons.end(), compareByPt);
+        // Sort descending
+        auto compareMaxByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() > b.pt(); };
+        std::sort(bareLeptons.begin(), bareLeptons.end(), compareMaxByPt);
+        std::sort(bornLeptons.begin(), bornLeptons.end(), compareMaxByPt);
 
         // Warning! Only really works for the W
         if (bareLeptons.size() > 0 && doPhotons_) {
