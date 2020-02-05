@@ -171,22 +171,29 @@ def getAllSymmetricHessianVariationHists(init2D_hist, entries, name, rebin=None,
 
 def getHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
-    #centralIndex = central if central != -1 else int(len(entries)/2)
     sumsq = lambda x: math.sqrt(sum([0 if y < 0.01 else ((x[central] - y)**2) for y in x]))
     upaction = lambda x: x[central] + sumsq(x) 
     downaction = lambda x: x[central] - sumsq(x) 
     return getVariationHists(hists, name, hist_name, 
-            upaction, downaction, central, True
-    )
+            upaction, downaction, central)
+
+def getAssymHessianShift(vals, varType):
+    pairs = zip(vals[1::2], vals[2::2])
+    central = vals[0]
+    diffs = [max(0, central - x[0], central - x[1]) for x in pairs] if varType == "up" else \
+            [max(0, x[0] - central, x[1] - central) for x in pairs] 
+    return math.sqrt(sum([x**2 for x in diffs]))
 
 def getAssymHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
     #centralIndex = central if central != -1 else int(len(entries)/2)
-    sumsq = lambda x: math.sqrt(sum([(0.5*(i - j))**2 for i,j in zip(x[1:-2:2], x[2:-1:2])]))
-    upaction = lambda x: x[central] + sumsq(x) 
-    downaction = lambda x: x[central] - sumsq(x) 
+    # From Eq. 3 https://arxiv.org/pdf/1101.0536.pdf
+    #sumsqup = lambda x: math.sqrt(sum([max(0, i - x[central], j - x[central])**2 for i,j in zip(x[1::2], x[2::2])]))
+    #sumsqdown = lambda x: math.sqrt(sum([max(0, x[central] - i, x[central] - j)**2 for i,j in zip(x[1::2], x[2::2])]))
+    upaction = lambda x: x[central] + getAssymHessianShift(x, "up") 
+    downaction = lambda x: x[central] - getAssymHessianShift(x, "down") 
     return getVariationHists(hists, name, hist_name, 
-            upaction, downaction, central, True
+            upaction, downaction, central
     )
 
 def getPDFPercentVariation(values):
@@ -214,7 +221,7 @@ def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in ra
         variationSet.extend(varhists)
     return variationSet
 
-def getVariationHists(hists, process_name, histUp_name, up_action, down_action, central=0, returnCen=False):
+def getVariationHists(hists, process_name, histUp_name, up_action, down_action, central=0):
     histUp = hists[0].Clone(histUp_name)
     histDown = histUp.Clone(histUp_name.replace("Up", "Down"))
     
