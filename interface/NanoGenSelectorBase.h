@@ -30,7 +30,9 @@ public :
     reco::GenParticleCollection bareLeptons;
     reco::GenParticleCollection dressedLeptons;
     reco::GenParticleCollection bornLeptons;
+    reco::GenParticleCollection lheLeptons;
     reco::GenParticleCollection bornNeutrinos;
+    reco::GenParticleCollection lheNeutrinos;
     reco::GenParticleCollection fsneutrinos;
     reco::GenParticleCollection neutrinos;
     reco::GenParticleCollection photons;
@@ -46,10 +48,12 @@ public :
     bool nnlops_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
-    bool doBareLeptons_ = false;
+    bool doBareLeptons_ = true;
     bool doBorn_ = false;
-    bool doPhotons_ = false;
-    bool doNeutrinos_ = false;
+    bool doLHE_ = true;
+    bool doPhotons_ = true;
+    bool doNeutrinos_ = true;
+    bool doFiducial_ = true;
 
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;
@@ -79,6 +83,12 @@ public :
     TTreeReaderArray<Int_t> GenPart_pdgId = {fReader, "GenPart_pdgId"};
     TTreeReaderArray<Int_t> GenPart_status = {fReader, "GenPart_status"};
     TTreeReaderArray<Int_t> GenPart_statusFlags = {fReader, "GenPart_statusFlags"};
+    TTreeReaderValue<UInt_t> nLHEPart = {fReader, "nLHEPart"};
+    TTreeReaderArray<Float_t> LHEPart_pt = {fReader, "LHEPart_pt"};
+    TTreeReaderArray<Float_t> LHEPart_eta = {fReader, "LHEPart_eta"};
+    TTreeReaderArray<Float_t> LHEPart_phi = {fReader, "LHEPart_phi"};
+    TTreeReaderArray<Float_t> LHEPart_mass = {fReader, "LHEPart_mass"};
+    TTreeReaderArray<Int_t> LHEPart_pdgId = {fReader, "LHEPart_pdgId"};
     TTreeReaderValue<UInt_t> nGenJet = {fReader, "nGenJet"};
     TTreeReaderArray<Float_t> GenJet_pt = {fReader, "GenJet_pt"};
     TTreeReaderArray<Float_t> GenJet_eta = {fReader, "GenJet_eta"};
@@ -107,6 +117,7 @@ protected:
     virtual void SetComposite() {}
     bool overlapsCollection(const LorentzVector& cand, reco::GenParticleCollection& collection, const float deltaRCut, size_t maxCompare);
     void buildHessian2MCSet();
+    reco::GenParticle makeGenParticle(int pdgid, int status, float pt, float eta, float phi, float m);
 };
 
 #endif
