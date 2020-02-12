@@ -15,9 +15,12 @@ void NanoGenSelectorBase::Init(TTree *tree)
         pdfweightshelper_.Init(N_LHEPDF_WEIGHTS_, N_MC2HESSIAN_WEIGHTS_, mc2hessianCSV);
     // NNLOPSLike is just a config name for one MiNNLO sample
     if (name_.find("nnlops") != std::string::npos && name_.find("nnlopslike") == std::string::npos) {
-        //std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
-        nnlops_ = true;
-        std::cout << "INFO: NNLOPS sample will be weighted by NNLO weight\n";
+        if (name_.find("nloOnly") == std::string::npos) {
+            nnlops_ = true;
+            std::cout << "INFO: NNLOPS sample will be weighted by NNLO weight\n";
+        }
+        else
+            std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
     }
     fReader.SetTree(tree);
 }
@@ -93,11 +96,13 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
                 photons.end()
             );
         }
+        neutrinos = fsneutrinos;
         std::sort(bareLeptons.begin(), bareLeptons.end(), compareMaxByPt);
         std::sort(bornLeptons.begin(), bornLeptons.end(), compareMaxByPt);
     }
     else if (variation.first == BareLeptons) {
         leptons = bareLeptons;
+        neutrinos = fsneutrinos;
     }
     else if (variation.first == BornParticles) {
         leptons = bornLeptons;
