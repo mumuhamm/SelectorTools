@@ -57,6 +57,7 @@ enum Systematic {
     recoilCorrectionStat7Up,      recoilCorrectionStat7Down,     
     recoilCorrectionStat8Up,      recoilCorrectionStat8Down,     
     recoilCorrectionStat9Up,      recoilCorrectionStat9Down,     
+    BareLeptons, BornParticles, LHEParticles,
 }; 
 
     

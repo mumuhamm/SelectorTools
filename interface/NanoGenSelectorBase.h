@@ -48,12 +48,9 @@ public :
     bool nnlops_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
-    bool doBareLeptons_ = true;
-    bool doBorn_ = false;
-    bool doLHE_ = true;
     bool doPhotons_ = true;
     bool doNeutrinos_ = true;
-    bool doFiducial_ = true;
+    bool doFiducial_ = false;
 
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;
