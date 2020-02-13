@@ -18,7 +18,7 @@ void ZGenSelector::Init(TTree *tree)
             hists1D_.push_back(chan + "_" + hist);
     }
 
-    weighthists1D_ = {"ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
+    weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
         "MET", "HT", };
     nLeptons_ = 2;
@@ -58,25 +58,39 @@ void ZGenSelector::SetComposite() {
 
 void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::string> variation) { 
     int step = 0;
-    SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
+    int failStep = 0;
 
+    step++;
     if (channel_ != mm && channel_ != ee) 
-        return;
-    SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
+        failStep = step;
 
-    auto lep1 = leptons.at(0);
-    auto lep2 = leptons.at(1);
-    if (std::abs(lep1.eta()) > 2.5 || std::abs(lep2.eta()) > 2.5) {
-        return;
-    }
-    SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
+    auto lep1 = leptons.size() > 1 ? leptons.at(0) : reco::GenParticle();
+    auto lep2 = leptons.size() > 1 ? leptons.at(1) : reco::GenParticle();
 
+    step++;
+    if (zCand.mass() < 50.)
+        failStep = step;
+    step++;
     if (lep1.pt() < 25. || lep2.pt() < 25.)
-        return;
-    SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
-
+        failStep = step;
+    step++;
+    if (std::abs(lep1.eta()) > 2.5 || std::abs(lep2.eta()) > 2.5)
+        failStep = step;
+    step++;
     if (zCand.mass() < 60. || zCand.mass() > 120.)
+        failStep = step;
+
+    for (int j = 0; j < (failStep == 0 ? step : failStep); j++) {
+        SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, j, weight);
+        for (size_t i = 0; i < *nLHEScaleWeight+*nLHEPdfWeight; i++) {
+            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+            thweight *= weight;
+            SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
+        }
+    }
+    if (failStep != 0)
         return;
+
     SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
     SafeHistFill(histMap1D_, "ZMass", channel_, variation.first, zCand.mass(), weight);
     SafeHistFill(histMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), weight);

@@ -363,6 +363,11 @@ std::string SelectorBase::concatenateNames(const std::string& baseName, std::str
     return concatenateNames(baseName.c_str(), toAppend);
 }
 
+std::string SelectorBase::concatenateNames(const std::string& baseName, const char* toAppend) {
+    std::string app = toAppend;
+    return concatenateNames(baseName.c_str(), toAppend);
+}
+
 std::string SelectorBase::concatenateNames(const char* baseName, std::string& toAppend) {
     if (toAppend.empty())
         return baseName;
