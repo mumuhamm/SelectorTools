@@ -169,12 +169,13 @@ def makeHistFile(args):
             map(os.remove, combinedNames)
     fOut = ROOT.TFile(tmpFileName, "update")
     OutputTools.addMetaInfo(fOut)
+    fOut.Close()
     if outFolder != '':
         shutil.move(fOut.GetName(), '/'.join([outFolder, fOut.GetName()]))
 
 def main():
     args = getComLineArgs()
-    logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.WARNING))
+    logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.INFO))
 
     makeHistFile(args)
     exit(0)

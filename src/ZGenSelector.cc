@@ -96,7 +96,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
         }
     }
-    if (failStep != 0)
+    if (doFiducial_ && failStep != 0)
         return;
 
     SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);

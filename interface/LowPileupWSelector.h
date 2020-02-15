@@ -34,6 +34,8 @@ public :
     TTreeReaderArray<double> evtWeight = {fReader, "evtWeight"};
     TTreeReaderArray<double> metVector = {fReader, "metVars"};
     TTreeReaderArray<double> metPhiVector = {fReader, "metVarsPhi"};
+    TTreeReaderValue<float> uncorrMet = {fReader, "met"};
+    TTreeReaderValue<float> uncorrMetPhi = {fReader, "metPhi"};
     TTreeReaderValue<TLorentzVector> lep = {fReader, "lep"};
     TTreeReaderValue<double> mtW = {fReader, "mtCorr"};
     TTreeReaderValue<float> mtWuncorr = {fReader, "mt"};
