@@ -26,7 +26,7 @@ args = parser.parse_args()
 if args.rebin and ":" in args.rebin:
     args.rebin = range(*[int(x) for x in args.rebin.split(":")])
 elif args.rebin and "," in args.rebin:
-    args.rebin = [float(i.strip) for i in args.rebin.split(",")]
+    args.rebin = [float(i.strip()) for i in args.rebin.split(",")]
 
 logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
 

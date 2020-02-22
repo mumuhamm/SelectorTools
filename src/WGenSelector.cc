@@ -11,6 +11,8 @@ void WGenSelector::Init(TTree *tree)
     hists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
         "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi",
         "ptj1", "ptj2", "etaj1", "etaj2", "nJets",
+        "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
+        "ptgmax_assoc", "ptgmax_assoc",
     };
     doSystematics_ = true;
     systematics_ = {
@@ -20,20 +22,14 @@ void WGenSelector::Init(TTree *tree)
     };
     systHists_ = hists1D_;
 
-    //hists1D_.push_back("dRlgamma_maxptassoc_barelep");
-    //hists1D_.push_back("dRlgamma_minassoc_barelep");
-    //hists1D_.push_back("ptg_closeassoc_barelep");
-    //hists1D_.push_back("nGammaAssoc");
-    //hists1D_.push_back("ptgmax_assoc_barelep");
-
-    weighthists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
-        "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi", "nJets"};
+    weighthists1D_ = {"CutFlow", "yW", "ptW", "mTtrue", "ptl", "etal", "phil", "ptnu", "etanu", };
 
     nLeptons_ = 1;
     doNeutrinos_ = true;
     doPhotons_ = true;
+    doFiducial_ = true;
+    doTheoryVars_ = true;
     NanoGenSelectorBase::Init(tree);
-
 }
 
 void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
@@ -92,54 +88,24 @@ void WGenSelector::SetComposite() {
     mTmet = mt(lepP4, genMet);
 }
 
-void WGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::string> variation) { 
+void WGenSelector::FillHistograms(Long64_t entry, SystPair variation) { 
     std::string lepType = "";
     FillHistogramsByName(entry, lepType, variation);
-
-    //if (doBareLeptons_) {
-    //    lepType = "barelep";
-    //    leptons = bareLeptons.size() > nLeptons_ ? std::vector<reco::GenParticle>(bareLeptons.begin(), bareLeptons.begin()+nLeptons_) : bareLeptons;
-    //    neutrinos = fsneutrinos;
-    //    SetComposite();
-    //    FillHistogramsByName(entry, lepType, variation);
-
-    //    if (!doPhotons_)
-    //        return;
-    //    if (leptons.size() < nLeptons_) 
-    //        return;
-    //    
-    //    // Presorted
-    //    auto& lep = leptons.at(0);
-    //    if (doFiducial_ && (lep.pt() < 25 || std::abs(lep.eta()) > 2.5))
-    //        return;
-    //    SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
-
-    //    auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
-    //    auto compareByDRLead = [lep] (const reco::GenParticle& a, const reco::GenParticle& b) {
-    //        return reco::deltaR(a, lep) < reco::deltaR(b, lep);
-    //    };
-
-    //    auto gclose = std::min_element(photons.begin(), photons.end(), compareByDRLead);
-    //    auto maxPtg = std::max_element(photons.begin(), photons.end(), compareByPt);
-
-    //    SafeHistFill(histMap1D_, "dRlgamma_minassoc_barelep", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose, lep) : 0., weight);
-    //    SafeHistFill(histMap1D_, "dRlgamma_maxptassoc_barelep", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep) : 0., weight);
-    //    SafeHistFill(histMap1D_, "ptg_closeassoc_barelep", channel_, variation.first, photons.size() > 0 ? gclose->pt() : 0., weight);
-    //    SafeHistFill(histMap1D_, "ptgmax_assoc_barelep", channel_, variation.first, photons.size() > 0 ? maxPtg->pt() : 0., weight);
-    //}
 }
 
-void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, std::pair<Systematic, std::string> variation) { 
+void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, SystPair variation) { 
     int step = 0;
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
     if (channel_ != mn && channel_ != en && channel_ != mp && channel_ != ep) 
         return;
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
-    for (size_t i = 1; i <= 3; i++)
-        SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
     if (leptons.size() < nLeptons_)
+        return;
+    SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
+
+    if (neutrinos.size() < nLeptons_)
         return;
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
@@ -183,8 +149,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, s
             maxEntry += N_MC2HESSIAN_WEIGHTS_;
 
         for (size_t i = 0; i < maxEntry; i++) {
-            float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
-                    : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
+            //float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
+            //        : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
+            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
             if (i > *nLHEScaleWeight && i < *nLHEScaleWeight+*nLHEPdfWeight)
                 mcPdfWeights_->Fill(thweight);
             else if (i > *nLHEScaleWeight+*nLHEPdfWeight)
@@ -205,5 +172,22 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, s
             SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
         }
+    }
+
+    if (variation.first == BareLeptons) {
+        SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
+
+        auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
+        auto compareByDRLead = [lep] (const reco::GenParticle& a, const reco::GenParticle& b) {
+            return reco::deltaR(a, lep) < reco::deltaR(b, lep);
+        };
+
+        auto gclose = std::min_element(photons.begin(), photons.end(), compareByDRLead);
+        auto maxPtg = std::max_element(photons.begin(), photons.end(), compareByPt);
+
+        SafeHistFill(histMap1D_, "dRlgamma_minassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose, lep) : 0., weight);
+        SafeHistFill(histMap1D_, "dRlgamma_maxptassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep) : 0., weight);
+        SafeHistFill(histMap1D_, "ptg_closeassoc", channel_, variation.first, photons.size() > 0 ? gclose->pt() : 0., weight);
+        SafeHistFill(histMap1D_, "ptgmax_assoc", channel_, variation.first, photons.size() > 0 ? maxPtg->pt() : 0., weight);
     }
 }

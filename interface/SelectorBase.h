@@ -30,7 +30,7 @@ enum Channel {
 };
   
 enum Systematic {
-    Central,
+    Central=0,
     jetEnergyScaleUp,          jetEnergyScaleDown,
     jetEnergyResolutionUp,     jetEnergyResolutionDown,
     metUnclusteredEnergyUp,    metUnclusteredEnergyDown,
@@ -134,8 +134,8 @@ class SelectorBase : public TSelector {
     typedef std::unordered_map<HistLabel, TH1D*> HistMap1D;
     typedef std::unordered_map<HistLabel, TH2D*> HistMap2D;
     typedef std::unordered_map<HistLabel, TH3D*> HistMap3D;
-    typedef std::map<Systematic, std::string> SystMap;
     typedef std::pair<Systematic, std::string> SystPair;
+    typedef std::map<Systematic, std::string> SystMap;
 
     /****************************/
     /*  __  __                  */

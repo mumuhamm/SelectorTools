@@ -50,8 +50,9 @@ public :
     bool doMC2H_ = false;
     bool doPhotons_ = true;
     bool doNeutrinos_ = true;
-    //bool doFiducial_ = true;
     bool doFiducial_ = false;
+    bool doBorn_ = true;
+    bool doBareLeptons_ = true;
 
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;

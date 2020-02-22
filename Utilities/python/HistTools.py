@@ -60,6 +60,15 @@ def makeUnrolledHist(init_2D_hist, xbins, ybins, name=""):
 
     return unrolled_hist
 
+def rebinHist(tmphist, histname, rebin):
+    if rebin and type(tmphist) != ROOT.TH2D:
+        if type(rebin) != int:
+            return tmphist.Rebin(len(rebin)-1, histname, rebin)
+        tmphist.Rebin(rebin)
+    hist = tmphist.Clone(histname)
+    ROOT.SetOwnership(hist, False)
+    return hist
+
 def make1DaQGCHists(orig_file, input2D_hists, plot_info, rebin=None):
     output_folders = []
     for name, data in plot_info.iteritems():
@@ -75,8 +84,8 @@ def make1DaQGCHists(orig_file, input2D_hists, plot_info, rebin=None):
             # that instead of creating a new one. See:
             # https://root.cern.ch/root/html532/src/TH2.cxx.html#2253
             tmphist = init_2D_hist.ProjectionX("temphist", entry, entry, "e")
-            hist_name = init_2D_hist_name.replace("lheWeights_", "")
-            hist1D = tmphist.Clone(hist_name) if not rebin else tmphist.Rebin(len(rebin)-1, hist_name, rebin)
+            histname = init_2D_hist_name.replace("lheWeights_", "")
+            hist1D = rebinHist(tmphist, histname, rebin)
             tmphist.Delete()
             ROOT.SetOwnership(hist1D, False)
             output_list.Add(hist1D)
@@ -117,9 +126,9 @@ def getStatHists(hist, name, chan, signal):
     return (stat_hists, variation_names)
 
 def getWeightHistProjection(init2D_hist, name, entry, rebin): 
-    hist_name = init2D_hist.GetName().replace("lheWeights", name+"_weight%i" % entry)
+    histname = init2D_hist.GetName().replace("lheWeights", name+"_weight%i" % entry)
     tmphist = init2D_hist.ProjectionX("temp", entry, entry, "e")
-    hist = tmphist.Clone(hist_name) if not rebin else tmphist.Rebin(len(rebin)-1, hist_name, rebin)
+    hist = rebinHist(tmphist, histname, rebin)
     return hist
 
 def getLHEWeightHists(init2D_hist, entries, name, variation_name, rebin=None):
@@ -180,7 +189,7 @@ def getHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=
 def getAssymHessianShift(vals, varType):
     pairs = zip(vals[1::2], vals[2::2])
     central = vals[0]
-    diffs = [max(0, central - x[0], central - x[1]) for x in pairs] if varType == "up" else \
+    diffs = [max(0, central - x[0], central - x[1]) for x in pairs] if varType == "down" else \
             [max(0, x[0] - central, x[1] - central) for x in pairs] 
     return math.sqrt(sum([x**2 for x in diffs]))
 
@@ -358,7 +367,7 @@ def makeCompositeHists(hist_file, name, members, lumi, hists=[], underflow=False
             if not tmphist: 
                 raise RuntimeError("Failed to produce histogram %s" % "/".join([directory, histname]))
             toRebin = rebin and not "TH2" in tmphist.ClassName()
-            hist = tmphist.Clone() if not toRebin else tmphist.Rebin(len(rebin)-1, histname, rebin)
+            hist = rebinHist(tmphist, histname, rebin)
             tmphist.Delete()
             if hist:
                 sumhist = composite.FindObject(hist.GetName())

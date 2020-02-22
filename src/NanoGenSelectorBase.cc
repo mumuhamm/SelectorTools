@@ -9,10 +9,12 @@ void NanoGenSelectorBase::Init(TTree *tree)
     b.SetTree(tree);
     SelectorBase::Init(tree);
     edm::FileInPath mc2hessianCSV("PhysicsTools/HepMCCandAlgos/data/NNPDF30_lo_as_0130_hessian_60.csv");
+    // Off for now
     doMC2H_ = name_.find("cp5") == std::string::npos && false;
-    std::cout << "INFO: Convert MC to Hessian is " << doMC2H_ << std::endl;
-    if (doMC2H_)
+    if (doMC2H_) {
+        std::cout << "INFO: Will convert MC PDF set to Hessian with MC2Hessian\n";
         pdfweightshelper_.Init(N_LHEPDF_WEIGHTS_, N_MC2HESSIAN_WEIGHTS_, mc2hessianCSV);
+    }
     // NNLOPSLike is just a config name for one MiNNLO sample
     if (name_.find("nnlops") != std::string::npos && name_.find("nnlopslike") == std::string::npos) {
         if (name_.find("nloOnly") == std::string::npos) {
@@ -22,13 +24,17 @@ void NanoGenSelectorBase::Init(TTree *tree)
         else
             std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
     }
+    if (!doFiducial_)
+        std::cout << "INFO: No fiducial selection will be applied\n";
+    doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
+    doBareLeptons_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
     fReader.SetTree(tree);
 }
 
 void NanoGenSelectorBase::SetBranchesNanoAOD() {
 }
 
-void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
+void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
     weight = 1;
     fReader.SetLocalEntry(entry);
 
@@ -40,14 +46,15 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
     if (doPhotons_)
         idsToKeep.push_back(22);
 
+    // This is a bit nasty because it assumes that Central is the first variation, which is NOT guaranteed!
     if (variation.first == Central) {
         bornLeptons.clear();
-        lheLeptons.clear();
-        bornNeutrinos.clear();
-        lheNeutrinos.clear();
         dressedLeptons.clear();
         bareLeptons.clear();
+
+        bornNeutrinos.clear();
         fsneutrinos.clear();
+
         jets.clear();
         for (size_t i = 0; i < *nGenDressedLepton; i++) {
             LorentzVector vec;
@@ -59,12 +66,11 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
         } // No need to sort, they're already pt sorted
         leptons = dressedLeptons;
         // Do once, only if bare or born leptons are requested
-        bool doBorn = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
-        bool doBareLeptons = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
-        if (doBorn || doBareLeptons) {
+        if (doBorn_ || doBareLeptons_) {
             for (size_t i = 0; i < *nGenPart; i++) {
                 bool isHardProcess = (GenPart_statusFlags.At(i) >> 7) & 1;
-                if ((doBorn && !isHardProcess) || GenPart_status.At(i) != 1)
+                bool isPrompt = (GenPart_statusFlags.At(i) >> 0) & 1;
+                if ((doBorn_ && !isHardProcess) || GenPart_status.At(i) != 1)
                     continue;
                 if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(GenPart_pdgId.At(i))) == idsToKeep.end())
                     continue;
@@ -72,18 +78,19 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
                 auto part = makeGenParticle(GenPart_pdgId.At(i), GenPart_status.At(i), GenPart_pt.At(i), 
                         GenPart_eta.At(i), GenPart_phi.At(i), GenPart_mass.At(i));
                 if (std::abs(part.pdgId()) == 11 || std::abs(part.pdgId()) == 13) {
-                    if (doBareLeptons && GenPart_status.At(i) == 1)
+                    if (doBareLeptons_ && GenPart_status.At(i) == 1)
                         bareLeptons.emplace_back(part);
-                    if (isHardProcess && doBorn)
+                    if (isHardProcess && doBorn_)
                         bornLeptons.emplace_back(part);
                 }
-                if (std::abs(part.pdgId()) == 12 || std::abs(part.pdgId()) == 14) {
+                else if (std::abs(part.pdgId()) == 12 || std::abs(part.pdgId()) == 14) {
                     if (GenPart_status.At(i) == 1)
                         fsneutrinos.emplace_back(part);
-                    if (isHardProcess && doBorn)
+                    if (isHardProcess && doBorn_)
                         bornNeutrinos.emplace_back(part);
                 }
-                else if (std::abs(part.pdgId()) == 22) {
+                else if (std::abs(part.pdgId()) == 22 && isPrompt) {
+                //else if (std::abs(part.pdgId()) == 22) {
                     photons.emplace_back(part);
                 }
             }
@@ -109,6 +116,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
         neutrinos = bornNeutrinos;
     }
     else if (variation.first == LHEParticles) {
+        lheLeptons.clear();
+        lheNeutrinos.clear();
         for (size_t i = 0; i < *nLHEPart; i++) {
             if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(LHEPart_pdgId.At(i))) == idsToKeep.end())
                 continue;
@@ -129,6 +138,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systemat
         }
         std::sort(lheLeptons.begin(), lheLeptons.end(), compareMaxByPt);
         leptons = lheLeptons;
+        neutrinos = lheNeutrinos;
     }
         
     if (variation.first != LHEParticles) {
