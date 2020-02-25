@@ -131,7 +131,6 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
     pfMet = metVector.At(metIndex);
     pfMetPhi = metPhiVector.At(metIndex);
     if (!isMC_) {
-        pfMet = *uncorrMet + 3.14159;
         pfMetPhi = *uncorrMetPhi + 3.14156;
     }
 
