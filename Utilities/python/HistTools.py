@@ -365,7 +365,9 @@ def makeCompositeHists(hist_file, name, members, lumi, hists=[], underflow=False
             if histname == "sumweights": continue
             tmphist = hist_file.Get("/".join([directory, histname]))
             if not tmphist: 
-                raise RuntimeError("Failed to produce histogram %s" % "/".join([directory, histname]))
+                #raise RuntimeError("Failed to produce histogram %s" % "/".join([directory, histname]))
+                logging.warning("Failed to produce histogram %s" % "/".join([directory, histname]))
+                continue
             toRebin = rebin and not "TH2" in tmphist.ClassName()
             hist = rebinHist(tmphist, histname, rebin)
             tmphist.Delete()

@@ -53,6 +53,8 @@ def getComLineArgs():
                         default=["all"], help="List of histograms, "
                         "as defined in AnalysisDatasetManager, separated "
                         "by commas")
+    parser.add_argument("--selectorArgs", nargs='+', type=str,
+        help="List of additional configurations to send to selector")
     return vars(parser.parse_args())
 
 def makeHistFile(args):
@@ -112,10 +114,13 @@ def makeHistFile(args):
     analysis = "/".join([args['analysis'], selection])
     hists, hist_inputs = UserInput.getHistInfo(analysis, args['hist_names'], args['noHistConfig'])
 
+    extra_inputs = [ROOT.TParameter(bool)(x.split("=")[0], bool(x.split("=")[1])) for x in args['selectorArgs']]
+    print extra_inputs
+
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
     selector.setNumCores(args['numCores'])
     selector.setOutputfile(fOut.GetName())
-    selector.setInputs(sf_inputs+hist_inputs)
+    selector.setInputs(sf_inputs+hist_inputs+extra_inputs)
     selector.setMaxEntries(args['maxEntries'])
 
     if args['uwvv']:
@@ -156,7 +161,7 @@ def makeHistFile(args):
         selector.isBackground()
         selector.setAddSumWeights(False)
         selector.unsetDatasetRegions()
-        selector.setInputs(sf_inputs+hist_inputs+fr_inputs)
+        selector.setInputs(sf_inputs+hist_inputs+fr_inputs+extra_inputs)
         output_name = tmpFileName.replace(".root", "bkgd.root")
         selector.setOutputfile(output_name)
         bkgd = selector.applySelector()

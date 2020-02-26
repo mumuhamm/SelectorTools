@@ -183,7 +183,9 @@ class CombineCardTools(object):
             histName = "_".join([fitVariable, chan]) if chan != "all" else fitVariable
             hist = group.FindObject(histName)
             if not hist:
-                raise RuntimeError("Failed to produce hist %s for process %s" % (histName, processName))
+                #raise RuntimeError("Failed to produce hist %s for process %s" % (histName, processName))
+                logging.warning("Failed to produce hist %s for process %s" % (histName, processName))
+                continue
             #TODO: Make optional
             if "data" not in processName.lower():
                 HistTools.removeZeros(hist)

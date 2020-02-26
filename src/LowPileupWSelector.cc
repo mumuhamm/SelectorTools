@@ -1,11 +1,13 @@
 #include "Analysis/VVAnalysis/interface/LowPileupWSelector.h"
 #include <TStyle.h>
 #include <regex>
+#include "TParameter.h"
 
 void LowPileupWSelector::Init(TTree *tree)
 {
-    doSystematics_ = false;
-    //doSystematics_ = true;
+    TParameter<bool>* doSyst = (TParameter<bool>*) GetInputList()->FindObject("doSyst");
+    doSystematics_ = doSyst != nullptr && doSyst->GetVal();
+    std::cout << "INFO: doSystematics is " << doSystematics_ << std::endl;
     allChannels_ = {{ep, "ep"}, {en, "en"}, {mp, "mp"}, {mn, "mn"}};
 
     hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "phiW", "ptl", "etal", "pfMet", "pfMetPhi",};

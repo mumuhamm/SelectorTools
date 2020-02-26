@@ -28,9 +28,9 @@ void SelectorBase::Init(TTree *tree)
 
     if (GetInputList() != nullptr) {
 	TNamed* ntupleType = (TNamed *) GetInputList()->FindObject("ntupleType");
-        TNamed* name = (TNamed *) GetInputList()->FindObject("name");
-        TNamed* chan = (TNamed *) GetInputList()->FindObject("channel");
-        TNamed* selection = (TNamed *) GetInputList()->FindObject("selection");
+    TNamed* name = (TNamed *) GetInputList()->FindObject("name");
+    TNamed* chan = (TNamed *) GetInputList()->FindObject("channel");
+    TNamed* selection = (TNamed *) GetInputList()->FindObject("selection");
 	TNamed* year = (TNamed *) GetInputList()->FindObject("year");
 
 	if (ntupleType != nullptr) {
