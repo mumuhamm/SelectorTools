@@ -16,6 +16,12 @@ void WGenSelector::Init(TTree *tree)
     };
     doSystematics_ = true;
     systematics_ = {
+        {mWShift50MeVUp, "mWShift50MeVUp"},
+        {mWShift20MeVUp, "mWShift20MeVUp"},
+        {mWShift100MeVUp, "mWShift100MeVUp"},
+        {mWShift50MeVDown, "mWShift50MeVDown"},
+        {mWShift20MeVDown, "mWShift20MeVDown"},
+        {mWShift100MeVDown, "mWShift100MeVDown"},
         {BareLeptons, "barelep"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
@@ -32,8 +38,22 @@ void WGenSelector::Init(TTree *tree)
     NanoGenSelectorBase::Init(tree);
 }
 
-void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
+void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
+    if (variation.first == Central)
+        cenWeight = weight;
+    else if (variation.first == mWShift20MeVUp)
+        weight = cenWeight*breitWignerWeight(20.);
+    else if (variation.first == mWShift20MeVDown)
+        weight = cenWeight*breitWignerWeight(-20.);
+    else if (variation.first == mWShift50MeVUp)
+        weight = cenWeight*breitWignerWeight(50.);
+    else if (variation.first == mWShift50MeVDown)
+        weight = cenWeight*breitWignerWeight(-50.);
+    else if (variation.first == mWShift100MeVUp)
+        weight = cenWeight*breitWignerWeight(100.);
+    else if (variation.first == mWShift100MeVDown)
+        weight = cenWeight*breitWignerWeight(-100.);
 
     if (leptons.size() > 0 && std::abs(leptons.at(0).pdgId()) == 11) {
         if (leptons.at(0).pdgId() > 0) {
@@ -60,6 +80,20 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std
         channelName_ = "Unknown";
         return;
     }
+}
+
+double WGenSelector::breitWignerWeight(double offset) {
+    //double MW_GEN = 80419.;
+    //double GAMMAW_GEN = 2050;
+    double MW_GEN = 80398.0;
+    double GAMMAW_GEN = 2088.720;
+
+    double targetMass = MW_GEN + offset;
+    double s_hat = wCand.mass()*wCand.mass()*1000*1000;
+    double offshell = s_hat - MW_GEN*MW_GEN;
+    double offshellOffset = s_hat - targetMass*targetMass;
+    return (offshell*offshell + GAMMAW_GEN*GAMMAW_GEN*MW_GEN*MW_GEN)/
+            (offshellOffset*offshellOffset + GAMMAW_GEN*GAMMAW_GEN*targetMass*targetMass);
 }
 
 void WGenSelector::SetComposite() {

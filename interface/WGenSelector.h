@@ -24,6 +24,7 @@ public :
     LorentzVector wCandMet;
     float mTtrue;
     float mTmet;
+    float cenWeight;
     
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;
@@ -37,6 +38,7 @@ protected:
     virtual void FillHistograms(Long64_t entry, std::pair<Systematic, std::string> variation) override;
     void FillHistogramsByName(Long64_t entry, std::string& toAppend, std::pair<Systematic, std::string> variation);
     void LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) override;
+    double breitWignerWeight(double offset);
 };
 
 #endif
