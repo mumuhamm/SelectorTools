@@ -114,8 +114,8 @@ def makeHistFile(args):
     analysis = "/".join([args['analysis'], selection])
     hists, hist_inputs = UserInput.getHistInfo(analysis, args['hist_names'], args['noHistConfig'])
 
-    extra_inputs = [ROOT.TParameter(bool)(x.split("=")[0], bool(x.split("=")[1])) for x in args['selectorArgs']]
-    print extra_inputs
+    extra_inputs = [] if not args['selectorArgs'] else \
+            [ROOT.TParameter(bool)(x.split("=")[0], bool(x.split("=")[1])) for x in args['selectorArgs']]
 
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
     selector.setNumCores(args['numCores'])

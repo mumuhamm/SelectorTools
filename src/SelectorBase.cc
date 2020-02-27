@@ -237,6 +237,13 @@ void SelectorBase::InitializeHistogramsFromConfig() {
     InitializeHistMap(hists1D_,histMap1D_);
     InitializeHistMap(weighthists1D_, weighthistMap1D_);
 
+    std::vector<std::string> tempSystHistNames;
+    for (auto hist : systHists_) {
+        for (auto& syst : systematics_) {
+            tempSystHistNames.push_back(hist + "_" + syst.second);
+        }
+    }
+
     for (auto && entry : *histInfo) {  
         TNamed* currentHistInfo = dynamic_cast<TNamed*>(entry);
         const char* name = currentHistInfo->GetName();
@@ -252,8 +259,8 @@ void SelectorBase::InitializeHistogramsFromConfig() {
             if (histMap1D_.find(centralLabel) != histMap1D_.end() || histMap2D_.find(centralLabel) != histMap2D_.end()) { 
                 InitializeHistogramFromConfig(name, chan, histData);
             }
-            //No need to print warning for every channel
-            else 
+            // May add a syst hist to plotobjects for plotting purposes, surpress errors in this case
+            else if (std::find(tempSystHistNames.begin(), tempSystHistNames.end(), name) == tempSystHistNames.end())
                 std::cerr << "Skipping invalid histogram '" << name << "'" << std::endl;
         }
     }

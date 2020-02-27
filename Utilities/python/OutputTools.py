@@ -5,7 +5,6 @@ import sys
 import logging
 
 def addMetaInfo(fOut):
-    logging.info("Trying to write meta info!")
     metaInfo = fOut.mkdir("MetaInfo")
     metaInfo.cd()
     time = ROOT.TNamed("datetime", str(datetime.datetime.now()))
@@ -21,7 +20,6 @@ def addMetaInfo(fOut):
 
     time.Write()
     command.Write()
-    logging.info("Wrote meta info to " + fOut.GetName())
 
 def gitHash():
     return subprocess.check_output(['git', 'log', '-1', '--format="%H"'])

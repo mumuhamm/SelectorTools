@@ -12,8 +12,8 @@ import os
 
 def getDefaultParser(allow_from_file=True):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--selection", type=str,
-                        required=True, help="Name of selection to make, "
+    parser.add_argument("-s", "--selection", type=str, default="Default",
+                        required=False, help="Name of selection to make, "
                         " as defined in Cuts/<analysis>/<selection>.json")
     parser.add_argument("-a", "--analysis", type=str,
                         required=False, default="WZxsec2016",

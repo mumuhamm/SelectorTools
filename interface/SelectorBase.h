@@ -58,6 +58,8 @@ enum Systematic {
     recoilCorrectionStat8Up,      recoilCorrectionStat8Down,     
     recoilCorrectionStat9Up,      recoilCorrectionStat9Down,     
     BareLeptons, BornParticles, LHEParticles,
+    mWShift50MeVUp, mWShift20MeVUp, mWShift100MeVUp,
+    mWShift50MeVDown, mWShift20MeVDown, mWShift100MeVDown,
 }; 
 
     
@@ -109,6 +111,7 @@ class SelectorBase : public TSelector {
     };
 
     enum Selection {
+        Default,
         tightleptons,                 ZZGenFiducial,
         Wselection,                   Zselection,
         WselectionAntiIso,                   
@@ -147,6 +150,7 @@ class SelectorBase : public TSelector {
     /****************************/
 
     std::map<std::string, Selection> selectionMap_ = {
+	{"Default", Default},
 	{"tightleptons", tightleptons},
         {"ZZGenFiducial", ZZGenFiducial},
         {"Wselection", Wselection},
