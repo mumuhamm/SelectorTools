@@ -53,8 +53,6 @@ def getComLineArgs():
                         default=["all"], help="List of histograms, "
                         "as defined in AnalysisDatasetManager, separated "
                         "by commas")
-    parser.add_argument("--selectorArgs", nargs='+', type=str,
-        help="List of additional configurations to send to selector")
     return vars(parser.parse_args())
 
 def makeHistFile(args):

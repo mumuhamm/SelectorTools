@@ -227,7 +227,7 @@ class CombineCardTools(object):
                     pdfHists += getattr(HistTools, pdfFunction)(weightHist, pdfVar['entries'], processName, 
                             self.rebin, central=pdfVar['central'],
                             pdfName=pdfVar['name'])
-                    if expandedTheory and "hessian" in pdfVar['combine']:
+                    if expandedTheory and pdfVar['name'] == 'NNPDF31':
                         allPdfHists = HistTools.getAllSymmetricHessianVariationHists(weightHist, pdfVar['entries'], processName, 
                             self.rebin, central=pdfVar['central'])
                         pdfHists.extend(allPdfHists)

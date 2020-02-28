@@ -140,6 +140,10 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         leptons = lheLeptons;
         neutrinos = lheNeutrinos;
     }
+    else {
+        leptons = dressedLeptons;
+        neutrinos = fsneutrinos;
+    }
         
     if (variation.first != LHEParticles) {
         jets.clear();

@@ -111,7 +111,7 @@ class SelectorBase : public TSelector {
     };
 
     enum Selection {
-        Default,
+        Default,                      None,
         tightleptons,                 ZZGenFiducial,
         Wselection,                   Zselection,
         WselectionAntiIso,                   
@@ -150,8 +150,9 @@ class SelectorBase : public TSelector {
     /****************************/
 
     std::map<std::string, Selection> selectionMap_ = {
-	{"Default", Default},
-	{"tightleptons", tightleptons},
+        {"Default", Default},
+        {"None", None},
+        {"tightleptons", tightleptons},
         {"ZZGenFiducial", ZZGenFiducial},
         {"Wselection", Wselection},
         {"WselectionAntiIso", WselectionAntiIso},

@@ -66,7 +66,7 @@ cardtool.setFitVariable(args.fitvar)
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
-cardtool.setVariations([])
+cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV"])
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
 
@@ -74,7 +74,8 @@ cardtool.setLumi(args.lumi)
 cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("WGenCombineInput.root")
 #cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
-cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
+#cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
+cardtool.setCombineChannels({"m" : ["mp"]})
 for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
@@ -98,7 +99,7 @@ for process in plot_groups:
     elif process not in ["nonprompt", "data"]: #and False
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
         cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", pdf_entries, central=0)
-    cardtool.loadHistsForProcess(process, expandedTheory=False)
+    cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 
 nuissance_map = {"e" : 34, "m" : 34 }

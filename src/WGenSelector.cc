@@ -1,5 +1,6 @@
 #include "Analysis/VVAnalysis/interface/WGenSelector.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
+#include "TParameter.h"
 #include <TStyle.h>
 #include <regex>
 #include <cmath>
@@ -33,8 +34,10 @@ void WGenSelector::Init(TTree *tree)
     nLeptons_ = 1;
     doNeutrinos_ = true;
     doPhotons_ = true;
-    doFiducial_ = true;
-    doTheoryVars_ = true;
+    TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
+    doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+    doFiducial_ = selection_ != None;
+
     NanoGenSelectorBase::Init(tree);
 }
 
@@ -42,6 +45,8 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
     if (variation.first == Central)
         cenWeight = weight;
+    else if (variation.first == LHEParticles)
+        mWlhe = wCand.mass()*1000.;
     else if (variation.first == mWShift20MeVUp)
         weight = cenWeight*breitWignerWeight(20.);
     else if (variation.first == mWShift20MeVDown)
@@ -85,15 +90,17 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
 double WGenSelector::breitWignerWeight(double offset) {
     //double MW_GEN = 80419.;
     //double GAMMAW_GEN = 2050;
+    // Chose by MC sample
     double MW_GEN = 80398.0;
     double GAMMAW_GEN = 2088.720;
 
     double targetMass = MW_GEN + offset;
-    double s_hat = wCand.mass()*wCand.mass()*1000*1000;
+    double s_hat = mWlhe*mWlhe;
     double offshell = s_hat - MW_GEN*MW_GEN;
     double offshellOffset = s_hat - targetMass*targetMass;
-    return (offshell*offshell + GAMMAW_GEN*GAMMAW_GEN*MW_GEN*MW_GEN)/
+    double weight = (offshell*offshell + GAMMAW_GEN*GAMMAW_GEN*MW_GEN*MW_GEN)/
             (offshellOffset*offshellOffset + GAMMAW_GEN*GAMMAW_GEN*targetMass*targetMass);
+    return weight;
 }
 
 void WGenSelector::SetComposite() {

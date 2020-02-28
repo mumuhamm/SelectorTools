@@ -18,6 +18,8 @@ def getDefaultParser(allow_from_file=True):
     parser.add_argument("-a", "--analysis", type=str,
                         required=False, default="WZxsec2016",
                         help="Analysis name, used in selecting the cut json")
+    parser.add_argument("--selectorArgs", nargs='+', type=str,
+        help="List of additional configurations to send to selector")
     if allow_from_file:
         input_group = parser.add_mutually_exclusive_group(required=True)
         input_group.add_argument("-f", "--filenames", 

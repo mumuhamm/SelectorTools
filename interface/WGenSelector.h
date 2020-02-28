@@ -22,6 +22,7 @@ public :
     LorentzVector nu;
     LorentzVector wCand;
     LorentzVector wCandMet;
+    float mWlhe;
     float mTtrue;
     float mTmet;
     float cenWeight;
