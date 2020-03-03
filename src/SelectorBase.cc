@@ -235,11 +235,16 @@ void SelectorBase::InitializeHistogramsFromConfig() {
         throw std::domain_error("Can't initialize histograms without passing histogram information to TSelector");
 
     InitializeHistMap(hists1D_,histMap1D_);
+    InitializeHistMap(hists2D_,histMap2D_);
     InitializeHistMap(weighthists1D_, weighthistMap1D_);
+    InitializeHistMap(weighthists2D_, weighthistMap2D_);
 
     std::vector<std::string> tempSystHistNames;
-    for (auto hist : systHists_) {
-        for (auto& syst : systematics_) {
+    for (auto& syst : systematics_) {
+        for (auto hist : systHists_) {
+            tempSystHistNames.push_back(hist + "_" + syst.second);
+        }
+        for (auto hist : systHists2D_) {
             tempSystHistNames.push_back(hist + "_" + syst.second);
         }
     }
@@ -337,7 +342,7 @@ void SelectorBase::InitializeHistogramFromConfig(std::string name, ChannelPair c
             }
         }
         // 3D weight hists must be subset of 2D hists!
-        if (isMC_ && (weighthistMap2D_.find(centralLabel) != weighthistMap2D_.end())) { 
+        if (isMC_ && std::find(weighthists2D_.begin(), weighthists2D_.end(), name) != weighthists2D_.end()) {
             AddObject<TH3D>(weighthistMap2D_[centralLabel], 
                 (name+"_lheWeights_"+channel.second).c_str(), histData[0].c_str(),
                 nbins, xmin, xmax, nbinsy, ymin, ymax, 2000, 0, 2000);

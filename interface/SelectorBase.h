@@ -58,8 +58,8 @@ enum Systematic {
     recoilCorrectionStat8Up,      recoilCorrectionStat8Down,     
     recoilCorrectionStat9Up,      recoilCorrectionStat9Down,     
     BareLeptons, BornParticles, LHEParticles,
-    mWShift50MeVUp, mWShift20MeVUp, mWShift100MeVUp,
-    mWShift50MeVDown, mWShift20MeVDown, mWShift100MeVDown,
+    mWShift100MeVUp, mWShift50MeVUp, mWShift25MeVUp, mWShift20MeVUp, mWShift10MeVUp, 
+    mWShift100MeVDown, mWShift50MeVDown, mWShift25MeVDown, mWShift20MeVDown, mWShift10MeVDown, 
 }; 
 
     
@@ -285,6 +285,7 @@ class SelectorBase : public TSelector {
     std::vector<std::string> hists1D_ = {};
     std::vector<std::string> hists2D_ = {};
     std::vector<std::string> weighthists1D_ = {};
+    std::vector<std::string> weighthists2D_ = {};
     // The histograms for which you also want systematic variations
     std::vector<std::string> systHists_ = {};
     std::vector<std::string> systHists2D_ = {};

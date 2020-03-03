@@ -29,6 +29,9 @@ def getDifference(fOut, name, dir1, dir2, ratioFunc=None):
     return differences
 
 def makeUnrolledHist(init_2D_hist, xbins, ybins, name=""):
+    if type(xbins) != array or type(ybins) != array:
+        xbins = array.array('d', xbins)
+        ybins = array.array('d', ybins)
     nbins = (len(xbins)-1)*(len(ybins)-1)
     hists_half_rolled = []
     for i in range(len(ybins)-1):

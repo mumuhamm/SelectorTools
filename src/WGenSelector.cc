@@ -15,21 +15,28 @@ void WGenSelector::Init(TTree *tree)
         "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
         "ptgmax_assoc", "ptgmax_assoc",
     };
+    hists2D_ = {"etal_ptl_2D"};
     doSystematics_ = true;
     systematics_ = {
-        {mWShift50MeVUp, "mWShift50MeVUp"},
-        {mWShift20MeVUp, "mWShift20MeVUp"},
         {mWShift100MeVUp, "mWShift100MeVUp"},
-        {mWShift50MeVDown, "mWShift50MeVDown"},
-        {mWShift20MeVDown, "mWShift20MeVDown"},
+        {mWShift50MeVUp, "mWShift50MeVUp"},
+        {mWShift25MeVUp, "mWShift25MeVUp"},
+        {mWShift20MeVUp, "mWShift20MeVUp"},
+        {mWShift10MeVUp, "mWShift10MeVUp"},
         {mWShift100MeVDown, "mWShift100MeVDown"},
+        {mWShift50MeVDown, "mWShift50MeVDown"},
+        {mWShift25MeVDown, "mWShift25MeVDown"},
+        {mWShift20MeVDown, "mWShift20MeVDown"},
+        {mWShift10MeVUp, "mWShift10MeVUp"},
         {BareLeptons, "barelep"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
     };
     systHists_ = hists1D_;
+    systHists2D_ = hists2D_;
 
     weighthists1D_ = {"CutFlow", "yW", "ptW", "mTtrue", "ptl", "etal", "phil", "ptnu", "etanu", };
+    weighthists2D_ = hists2D_;
 
     nLeptons_ = 1;
     doNeutrinos_ = true;
@@ -47,10 +54,18 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         cenWeight = weight;
     else if (variation.first == LHEParticles)
         mWlhe = wCand.mass()*1000.;
+    else if (variation.first == mWShift10MeVUp)
+        weight = cenWeight*breitWignerWeight(10.);
+    else if (variation.first == mWShift10MeVDown)
+        weight = cenWeight*breitWignerWeight(-10.);
     else if (variation.first == mWShift20MeVUp)
         weight = cenWeight*breitWignerWeight(20.);
     else if (variation.first == mWShift20MeVDown)
         weight = cenWeight*breitWignerWeight(-20.);
+    else if (variation.first == mWShift25MeVUp)
+        weight = cenWeight*breitWignerWeight(25.);
+    else if (variation.first == mWShift25MeVDown)
+        weight = cenWeight*breitWignerWeight(-25.);
     else if (variation.first == mWShift50MeVUp)
         weight = cenWeight*breitWignerWeight(50.);
     else if (variation.first == mWShift50MeVDown)
@@ -175,6 +190,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     SafeHistFill(histMap1D_, concatenateNames("etanu", toAppend), channel_, variation.first, nu.eta(), weight);
     SafeHistFill(histMap1D_, concatenateNames("phinu", toAppend), channel_, variation.first, nu.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), weight);
+    SafeHistFill(histMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), weight);
     for (size_t i = 1; i <= 3; i++) {
         if (jets.size() >= i ) {
             const auto& jet = jets.at(i-1);
@@ -212,6 +228,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
+            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, weight);
         }
     }
 
