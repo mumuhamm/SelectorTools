@@ -26,6 +26,9 @@ public :
     float mTtrue;
     float mTmet;
     float cenWeight;
+
+    float MW_GEN_;
+    float GAMMAW_GEN_;
     
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;

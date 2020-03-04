@@ -251,6 +251,7 @@ class SelectorDriver(object):
                     logging.warning("Failed to find sumweights for dataset %s" % dataset)
                 dataset_list.Add(sumweights_hist)
             OutputTools.writeOutputListItem(dataset_list, self.current_file)
+            map(lambda x: x.Delete(), dataset_list)
             del dataset_list
         del output_list
 

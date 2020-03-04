@@ -217,6 +217,7 @@ def getPDFPercentVariation(values):
     return abs(values[upvar] - values[downvar])/denom
 
 def getScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10)], central=0, exclude=[7,9]):
+    entries = filter(lambda x: x not in exclude, entries)
     hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
     return getVariationHists(hists, name, hist_name, lambda x: x[-1], lambda x: x[1], central)
 

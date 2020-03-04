@@ -1,5 +1,4 @@
-from python import CombineCardTools
-from python import ConfigureJobs
+from python import ConfigureJobs,CombineCardTools,UserInput
 import sys
 import ROOT
 import logging
@@ -15,6 +14,8 @@ parser.add_argument("--mc2hes", action='store_true',
     help="Convert MC errors to hessian")
 parser.add_argument("-c", "--central", type=str, default="wlnu_jetbinned_nlo_cp5",
     help="Sample to use as central value")
+parser.add_argument("--files", type=lambda x: [i.strip() for i in x.split(",")], 
+    default=[], help="Samples to add to output file")
 parser.add_argument("-d", "--data", type=str, default="wlnu_nlo",
     help="Sample to use as dummy data")
 parser.add_argument("-a", "--append", type=str, default="",
@@ -45,24 +46,26 @@ config_factory = ConfigHistFactory(
 )
 
 #plot_groups = ["wlnu_lo", "wlnu_lo_cp5", "wlnu_nlo", "wlnu_jetbinned_nlo", "wlnu_jetbinned_nlo_cp5", ]
-plot_groups = ["wpmunu_minnlo_nnlopslike_photos", ]
+plot_groups = args.files if args.files else ["wpmunu_minnlo_nnlopslike_photos", "wpmunu_nnlops_photos", "wpmunu_nnlops_nlow"]
 plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plot_groups}
 
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
 
 #channels = ["ep", "en", "mp", "mn"]
 channels = ["mp", "mn"]
-if args.rebin and ":" in args.rebin:
-    args.rebin = array.array('d', range(*[int(x) for x in args.rebin.split(":")]))
-elif args.rebin and "," in args.rebin:
-    print args.rebin.split(",")
-    args.rebin = array.array('d', [float(i.strip()) for i in args.rebin.split(",")])
-elif args.rebin:
-    args.rebin = int(args.rebin)
-
 if args.rebin:
+    if ":" in args.rebin:
+        args.rebin = array.array('d', UserInput.getRebin(args.rebin))
+    elif "," in args.rebin:
+        print args.rebin.split(",")
+        args.rebin = array.array('d', [float(i.strip()) for i in args.rebin.split(",")])
+    else:
+        args.rebin = int(args.rebin)
     cardtool.setRebin(args.rebin)
+
 cardtool.setFitVariable(args.fitvar)
+if "unrolled" in args.fitvar:
+    cardtool.setUnrolled(range(25, 65, 2), [-2.5*i for i in range(0,26)])
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -79,7 +82,7 @@ cardtool.setCombineChannels({"m" : ["mp"]})
 for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
-        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
+        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
         # NNPDF3.1
         cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
         # NNPDF31_nnlo_as_0118_CMSW1_hessian_100; LHAPDFID = 325700
@@ -96,9 +99,11 @@ for process in plot_groups:
         cardtool.addTheoryVar(process, 'pdf_assymhessian', range(584, 635), central=0, specName="MMHT")
         # HERA20_EIG
         cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
-    elif process not in ["nonprompt", "data"]: #and False
-        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
-        cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", pdf_entries, central=0)
+    elif "nnlops" in process:
+        cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=4)
+    elif process not in ["nonprompt", "data"] and "nnlops" not in process:
+        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[3, 7], central=4)
+        cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 

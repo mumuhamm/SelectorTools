@@ -33,6 +33,11 @@ class CombineCardTools(object):
     def setRebin(self, rebin):
         self.rebin = rebin
 
+    def setUnrolled(self, binsx, binsy):
+        self.isUnrolledFit = True
+        self.unrolledBinsX = binsx
+        self.unrolledBinsY = binsy
+
     def setCrosSectionMap(self, xsecMap):
         self.crossSectionMap = xsecMap
 
@@ -124,10 +129,10 @@ class CombineCardTools(object):
         return self.histData[processName] 
 
     def getFitVariable(self, process):
+        fitvar = self.fitVariable.replace("unrolled", "2D")
         if process not in self.fitVariableAppend:
-            return self.fitVariable 
-        return "_".join([self.fitVariable, self.fitVariableAppend[process]])
-
+            return fitvar
+        return "_".join([fitvar, self.fitVariableAppend[process]])
 
     def setCombineChannels(self, groups):
         self.channelsToCombine = groups
@@ -183,9 +188,10 @@ class CombineCardTools(object):
             histName = "_".join([fitVariable, chan]) if chan != "all" else fitVariable
             hist = group.FindObject(histName)
             if not hist:
-                #raise RuntimeError("Failed to produce hist %s for process %s" % (histName, processName))
                 logging.warning("Failed to produce hist %s for process %s" % (histName, processName))
                 continue
+            if self.isUnrolledFit:
+                hist = HistTolls.makeUnrolledHist(hist, self.unrolledBinsX, self.unrolledBinsY)
             #TODO: Make optional
             if "data" not in processName.lower():
                 HistTools.removeZeros(hist)
@@ -206,6 +212,7 @@ class CombineCardTools(object):
                 theoryVars = self.theoryVariations[processName]
                 scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
                     entries=theoryVars['scale']['entries'], 
+                    exclude=theoryVars['scale']['exclude'], 
                     central=(theoryVars['scale']['central'] if 'scale' in theoryVars else -1))
                 if expandedTheory:
                     expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 

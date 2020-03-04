@@ -1,6 +1,5 @@
 #include "Analysis/VVAnalysis/interface/WGenSelector.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
-#include "TParameter.h"
 #include <TStyle.h>
 #include <regex>
 #include <cmath>
@@ -41,9 +40,20 @@ void WGenSelector::Init(TTree *tree)
     nLeptons_ = 1;
     doNeutrinos_ = true;
     doPhotons_ = true;
-    TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
-    doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
-    doFiducial_ = selection_ != None;
+    
+    // Chose by MC sample
+    if (name_.find("nnlops") != std::string::npos) {
+        MW_GEN_ = 80398.0;
+        GAMMAW_GEN_ = 2088.720;
+    }
+    else if (name_.find("minnlo") != std::string::npos) {
+        MW_GEN_ = 80398.0;
+        GAMMAW_GEN_ = 2141.0;
+    }
+    else {
+        MW_GEN_ = 80419.;
+        GAMMAW_GEN_ = 2050;
+    }
 
     NanoGenSelectorBase::Init(tree);
 }
@@ -103,18 +113,13 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
 }
 
 double WGenSelector::breitWignerWeight(double offset) {
-    //double MW_GEN = 80419.;
-    //double GAMMAW_GEN = 2050;
-    // Chose by MC sample
-    double MW_GEN = 80398.0;
-    double GAMMAW_GEN = 2088.720;
 
-    double targetMass = MW_GEN + offset;
+    double targetMass = MW_GEN_ + offset;
     double s_hat = mWlhe*mWlhe;
-    double offshell = s_hat - MW_GEN*MW_GEN;
+    double offshell = s_hat - MW_GEN_*MW_GEN_;
     double offshellOffset = s_hat - targetMass*targetMass;
-    double weight = (offshell*offshell + GAMMAW_GEN*GAMMAW_GEN*MW_GEN*MW_GEN)/
-            (offshellOffset*offshellOffset + GAMMAW_GEN*GAMMAW_GEN*targetMass*targetMass);
+    double weight = (offshell*offshell + GAMMAW_GEN_*GAMMAW_GEN_*MW_GEN_*MW_GEN_)/
+            (offshellOffset*offshellOffset + GAMMAW_GEN_*GAMMAW_GEN_*targetMass*targetMass);
     return weight;
 }
 
@@ -216,6 +221,8 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             else 
                 scaleWeights_->Fill(thweight);
             thweight *= weight;
+            if (nnlops_)
+                thweight /= LHEScaleWeight.At(nnlopsWeightIndex_);
             SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);

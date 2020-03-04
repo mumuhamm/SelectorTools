@@ -39,6 +39,11 @@ def getDefaultParser(allow_from_file=True):
                             "by commas")
     return parser
 
+def getRebin(args):
+    vals = args.split(":")
+    x = [float(i.strip()) for i in vals]
+    return [x[0]+x[2]*i for i in range(int((x[1]-x[0])/x[2]))]
+
 def readPythonOrJson(file_path):
     if ".py" not in file_path[-3:] and ".json" not in file_path[-5:]:
         if os.path.isfile(file_path+".py"):

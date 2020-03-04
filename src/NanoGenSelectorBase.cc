@@ -1,6 +1,7 @@
 #include "Analysis/VVAnalysis/interface/NanoGenSelectorBase.h"
 #include "PhysicsTools/HepMCCandAlgos/interface/PDFWeightsHelper.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "TParameter.h"
 #include <TStyle.h>
 #include <regex>
 
@@ -24,6 +25,9 @@ void NanoGenSelectorBase::Init(TTree *tree)
         else
             std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
     }
+    TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
+    doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+    doFiducial_ = selection_ != None;
     if (!doFiducial_)
         std::cout << "INFO: No fiducial selection will be applied\n";
     doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
@@ -66,7 +70,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         } // No need to sort, they're already pt sorted
         leptons = dressedLeptons;
         // Do once, only if bare or born leptons are requested
-        if (doBorn_ || doBareLeptons_) {
+        if (doNeutrinos_ || doBorn_ || doBareLeptons_) {
             for (size_t i = 0; i < *nGenPart; i++) {
                 bool isHardProcess = (GenPart_statusFlags.At(i) >> 7) & 1;
                 bool isPrompt = (GenPart_statusFlags.At(i) >> 0) & 1;
@@ -166,7 +170,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     weight = *genWeight;       
 
     if (nnlops_) {
-        weight *= LHEScaleWeight.At(9);
+        weight *= LHEScaleWeight.At(nnlopsWeightIndex_);
     }
     if (doMC2H_)
         buildHessian2MCSet();
