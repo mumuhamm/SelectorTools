@@ -146,8 +146,7 @@ def getLHEWeightHists(init2D_hist, entries, name, variation_name, rebin=None):
         hist_name = "_".join([hist_name, variation_name, name+"Up"])
     return hists, hist_name
 
-def getMCPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0):
-    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdfMC", rebin)
+def makeMCPDFVarHists(init2D_hist, entries, name, central=0):
     if central == -1:
         upaction = lambda x: x[int(0.84*len(entries))] 
         downaction = lambda x: x[int(0.16*len(entries))] 
@@ -159,8 +158,17 @@ def getMCPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0):
             upaction, downaction, central
     )
 
+def getMCPDFVarHists(init2D_hist, entries, name, rebin=None, central=0):
+    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdfMC", rebin)
+    return makeMCPDFVarHists(hists, hist_name, name, central)
+
+def getTransformed3DMCPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0):
+    hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
+    hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdfMC", name+"Up"]))
+    return makeMCPDFVarHists(hists, hist_name, name, central)
+
 # Calculate standard deviation per bin
-def getSymmMCPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+def getSymMCPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sMC" % pdfName, rebin)
     upaction = lambda x: numpy.mean(x[1:]) + numpy.std(x[1:], ddof=1)
     downaction = lambda x: numpy.mean(x[1:]) - numpy.std(x[1:], ddof=1)
@@ -168,7 +176,8 @@ def getSymmMCPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central
     )
-def makeAllSymmetricHessianVariationHists(hists, name, central=0):
+
+def makeAllSymHessianHists(hists, hist_name, name, central=0):
     variationSet = []
     for i, hist in enumerate(hists[0:central]+hists[central:]):
         upaction = lambda x: x[1] if x[1] > x[0] else (x[0]**2/x[1] if x[1] > 0 else 0)
@@ -178,17 +187,30 @@ def makeAllSymmetricHessianVariationHists(hists, name, central=0):
             hist_name.replace("pdf_%s" % name, "pdf%i" %i), upaction, downaction, central))
     return variationSet
 
-def getAllSymmetricHessianVariationHists(init2D_hist, entries, name, rebin=None, central=0):
+def getAllSymHessianHists(init2D_hist, entries, name, rebin=None, central=0):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf", rebin)
-    return makeAllSymmetricHessianVariationHists(hists, hist_name, name, central)
+    return makeAllSymHessianHists(hists, hist_name, name, central)
 
-def getHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
-    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
+def getTransformed3DAllSymHessianHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0):
+    hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
+    hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf", name+"Up"]))
+    return makeAllSymHessianHists(hists, hist_name, name, central)
+
+def makeHessianPDFVarHists(hists, hist_name, name, central=0):
     sumsq = lambda x: math.sqrt(sum([0 if y < 0.01 else ((x[central] - y)**2) for y in x]))
     upaction = lambda x: x[central] + sumsq(x) 
     downaction = lambda x: x[central] - sumsq(x) 
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central)
+
+def getHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
+    return makeHessianPDFVarHists(hists, hist_name, name, central)
+
+def getTransformed3DHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName=""):
+    hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
+    hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf%sHesUp" % pdfName]))
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
 
 def getAssymHessianShift(vals, varType):
     pairs = zip(vals[1::2], vals[2::2])
@@ -197,8 +219,7 @@ def getAssymHessianShift(vals, varType):
             [max(0, x[0] - central, x[1] - central) for x in pairs] 
     return math.sqrt(sum([x**2 for x in diffs]))
 
-def getAssymHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
-    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
+def makeAssymHessianPDFVarHists(hists, hist_name, name, central=0):
     #centralIndex = central if central != -1 else int(len(entries)/2)
     # From Eq. 3 https://arxiv.org/pdf/1101.0536.pdf
     #sumsqup = lambda x: math.sqrt(sum([max(0, i - x[central], j - x[central])**2 for i,j in zip(x[1::2], x[2::2])]))
@@ -208,6 +229,15 @@ def getAssymHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, cen
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central
     )
+
+def getAssymHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
+
+def getTransformed3DAssymHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName=""):
+    hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
+    hist_name = hist3D.GetName().replace("2D_lheWeights", "unrolled")
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
 
 def getPDFPercentVariation(values):
     upvar = int(0.84*len(values))
@@ -304,17 +334,8 @@ def getTransformed3DExpandedScaleHists(scale_hist3D, transformation, transform_a
     hist_name = scale_hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "QCDscale", name+"Up"]))
     return makeExpandedScaleHists(hists, hist_name, name, pairs)
 
-def getTransformed3DPDFHists(hist3D, transformation, transform_args, entries, name):
-    hists = []
-    for i in entries:
-        hist3D.GetZaxis().SetRange(i,i)
-        # Order yx matters to have consistent axes!
-        hist2D = hist3D.Project3D("yxe")
-        hist_name = hist3D.GetName().replace("lheWeights", name+"_weight%i" % i)
-        hist2D.SetName(hist_name)
-        hist1D = transformation(hist2D, *transform_args)
-        hists.append(hist1D)
-    #return hists
+def getTransformed3DSymMCPDFVarHists(hist3D, transformation, transform_args, entries, name):
+    hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries, exclude=[])
     hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf", name+"Up"]))
     return getVariationHists(hists, name, hist_name, 
             lambda x: x[0]*(1+getPDFPercentVariation(x)), 

@@ -226,8 +226,7 @@ class CombineCardTools(object):
                 scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
                         entries=theoryVars['scale']['entries'], 
                         exclude=theoryVars['scale']['exclude'], 
-                        central=theoryVars['scale']['central']) \
-                if not self.isUnrolledFit and weightHist.inheritsFrom("TH3") else \
+                        central=theoryVars['scale']['central']) if not self.isUnrolledFit else \
                     HistTools.getTransformed3DScaleHists(weightHist, HistTools.makeUnrolledHist,
                             [self.unrolledBinsX, self.unrolledBinsY], processName,
                         entries=theoryVars['scale']['entries'], 
@@ -250,19 +249,29 @@ class CombineCardTools(object):
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
                 for var in pdfVars: 
                     pdfVar = theoryVars[var]
-                    pdfType = "SymmMC"
+                    pdfType = "MC"
                     if "hessian" in pdfVar['combine']:
                         pdfType = "Hessian" if "assym" not in pdfVar['combine'] else "AssymHessian"
 
-                    pdfFunction = "get%sPDFVariationHists" % pdfType
-                    pdfHists += getattr(HistTools, pdfFunction)(weightHist, pdfVar['entries'], processName, 
-                            self.rebin, central=pdfVar['central'],
-                            pdfName=pdfVar['name'])
+                    pdfFunction = "get%sPDFVarHists" % pdfType 
+                    args = [weightHist, pdfVar['entries'], processName, self.rebin, pdfVar['central'], pdfVar['name']]
+                    if self.isUnrolledFit:
+                        pdfFunction = pdfFunction.replace("get", "getTransformed3D")
+                        args = args[0:1] + [HistTools.makeUnrolledHist, [self.unrolledBinsX, self.unrolledBinsY]] + args[1:]
+
+                    pdfHists += getattr(HistTools, pdfFunction)(*args)
+
                     if expandedTheory and pdfVar['name'] == 'NNPDF31':
-                        allPdfHists = HistTools.getAllSymmetricHessianVariationHists(weightHist, pdfVar['entries'], processName, 
-                            self.rebin, central=pdfVar['central'])
+                        args.pop(len(args)-1)
+                        pdfFunction = HistTools.getAllSymHessianHists if not self.isUnrolledFit else HistTools.getTransformed3DAllSymHessianHists
+                        allPdfHists = pdfFunction(*args)
                         pdfHists.extend(allPdfHists)
-                        cenHist, _ = HistTools.getLHEWeightHists(weightHist, pdfVar['entries'][:1], processName, "pdf", self.rebin)
+
+                        if not self.isUnrolledFit:
+                            cenHist, _ = HistTools.getLHEWeightHists(weightHist, pdfVar['entries'][:1], processName, "pdf", self.rebin)
+                        else:
+                            cenHist = HistTools.getAllTransformed3DHists(weightHist, HistTools.makeUnrolledHist, 
+                                    [self.unrolledBinsX, self.unrolledBinsY], processName, pdfVar['entries'][:1])
                         if len(cenHist) and cenHist[0]:
                             pdfHists.append(cenHist[0].Clone())
                 group.extend(scaleHists+pdfHists)
