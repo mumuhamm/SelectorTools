@@ -26,6 +26,8 @@ parser.add_argument("-f", "--input_file", type=str, required=True,
     help="Input hist file")
 parser.add_argument("-l", "--lumi", type=float, 
     default=0.2, help="lumi")
+parser.add_argument("--noPdf", action='store_true', 
+    help="don't add PDF uncertainties")
 parser.add_argument("-r", "--rebin", 
                     type=str, default=None, help="Rebin array: "
                     "values (bin edges) separated by commas.")
@@ -65,7 +67,7 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
-    cardtool.setUnrolled(range(25, 65, 2), [-2.5*i for i in range(0,26)])
+    cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 2))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -83,27 +85,30 @@ for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
-        # NNPDF3.1
-        cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
-        # NNPDF31_nnlo_as_0118_CMSW1_hessian_100; LHAPDFID = 325700
-        cardtool.addTheoryVar(process, 'pdf_hessian', range(121, 222), central=0, specName="CMSW1")
-        # NNPDF31_nnlo_as_0118_CMSW2_hessian_100; LHAPDFID = 325900
-        cardtool.addTheoryVar(process, 'pdf_hessian', range(222, 323), central=0, specName="CMSW2")
-        # NNPDF31_nnlo_as_0118_CMSW3_hessian_100; LHAPDFID = 326100
-        cardtool.addTheoryVar(process, 'pdf_hessian', range(323, 424), central=0, specName="CMSW3")
-        # NNPDF31_nnlo_as_0118_CMSW3_hessian_100; LHAPDFID = 326300
-        cardtool.addTheoryVar(process, 'pdf_hessian', range(424, 525), central=0, specName="CMSW4")
-        # CT14
-        cardtool.addTheoryVar(process, 'pdf_assymhessian', range(525, 582), central=0, specName="CT14")
-        # MMHT
-        cardtool.addTheoryVar(process, 'pdf_assymhessian', range(584, 635), central=0, specName="MMHT")
-        # HERA20_EIG
-        cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
+        if not args.noPdf:
+            # NNPDF3.1
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
+            # NNPDF31_nnlo_as_0118_CMSW1_hessian_100; LHAPDFID = 325700
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(121, 222), central=0, specName="CMSW1")
+            # NNPDF31_nnlo_as_0118_CMSW2_hessian_100; LHAPDFID = 325900
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(222, 323), central=0, specName="CMSW2")
+            # NNPDF31_nnlo_as_0118_CMSW3_hessian_100; LHAPDFID = 326100
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(323, 424), central=0, specName="CMSW3")
+            # NNPDF31_nnlo_as_0118_CMSW3_hessian_100; LHAPDFID = 326300
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(424, 525), central=0, specName="CMSW4")
+            # CT14
+            cardtool.addTheoryVar(process, 'pdf_assymhessian', range(525, 582), central=0, specName="CT14")
+            # MMHT
+            cardtool.addTheoryVar(process, 'pdf_assymhessian', range(584, 635), central=0, specName="MMHT")
+            # HERA20_EIG
+            cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
     elif "nnlops" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=4)
-    elif process not in ["nonprompt", "data"] and "nnlops" not in process:
+        cardtool.setScaleVarGroups(process, [(1,7), (3,5), (0,8)])
+    elif process not in ["nonprompt", "data"]:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[3, 7], central=4)
-        cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
+        if not args.noPdf:
+            cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 

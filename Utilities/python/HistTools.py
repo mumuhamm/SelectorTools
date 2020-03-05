@@ -168,10 +168,7 @@ def getSymmMCPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central
     )
-
-def getAllSymmetricHessianVariationHists(init2D_hist, entries, name, rebin=None, central=0):
-    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf", rebin)
-    #centralIndex = central if central != -1 else int(len(entries)/2)
+def makeAllSymmetricHessianVariationHists(hists, name, central=0):
     variationSet = []
     for i, hist in enumerate(hists[0:central]+hists[central:]):
         upaction = lambda x: x[1] if x[1] > x[0] else (x[0]**2/x[1] if x[1] > 0 else 0)
@@ -180,6 +177,10 @@ def getAllSymmetricHessianVariationHists(init2D_hist, entries, name, rebin=None,
         variationSet.extend(getVariationHists([hists[central], hist], name, 
             hist_name.replace("pdf_%s" % name, "pdf%i" %i), upaction, downaction, central))
     return variationSet
+
+def getAllSymmetricHessianVariationHists(init2D_hist, entries, name, rebin=None, central=0):
+    hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf", rebin)
+    return makeAllSymmetricHessianVariationHists(hists, hist_name, name, central)
 
 def getHessianPDFVariationHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
@@ -221,18 +222,20 @@ def getScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10
     hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
     return getVariationHists(hists, name, hist_name, lambda x: x[-1], lambda x: x[1], central)
 
-# Pairs should correspond to muR, muF in (0.5, 1)
-# nano ordering is [0] is mur=0.5 muf=0.5 ; [1] is mur=0.5 muf=1 ; [2] is mur=0.5 muf=2 ; [3] is mur=1 muf=0.5 ; 
-# [4] is mur=1 muf=1 ; [5] is mur=1 muf=2 ; [6] is mur=2 muf=0.5 ; [7] is mur=2 muf=1 ; [8] is mur=2 muf=2 *
-def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10)], central=-1, 
-        pairs=[(1,7), (3,5), (0,8)]):
-    hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
+# Pairs should correspond to muR, muF in (0.5, 1) ordered muR, muF, muR+muF
+def makeExpandedScaleHists(hists, hist_name, name, pairs):
     variationSet = []
     for label, indices in zip(["muR", "muF", "muRmuF"], pairs):
         varhists = getVariationHists([hists[i] for i in indices], name,
             hist_name.replace("QCDscale","QCDscale_"+label), lambda x: x[-1], lambda x: x[1], -1)
         variationSet.extend(varhists)
     return variationSet
+
+# nano ordering is [0] is mur=0.5 muf=0.5 ; [1] is mur=0.5 muf=1 ; [2] is mur=0.5 muf=2 ; [3] is mur=1 muf=0.5 ; 
+# [4] is mur=1 muf=1 ; [5] is mur=1 muf=2 ; [6] is mur=2 muf=0.5 ; [7] is mur=2 muf=1 ; [8] is mur=2 muf=2 *
+def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10)], pairs=[(1,7), (3,5), (0,8)]):
+    hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
+    return makeExpandedScaleHists(hists, hist_name, name, pairs)
 
 def getVariationHists(hists, process_name, histUp_name, up_action, down_action, central=0):
     histUp = hists[0].Clone(histUp_name)
@@ -278,21 +281,28 @@ def isValidVariation(process_name, histCentral, histUp, histDown):
                 "bin: %i\n" 
                 % (process_name, histUp.GetName(), histUp.GetBinContent(i), histDown.GetBinContent(i), histCentral.GetBinContent(i), i)
             )
-
-def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name):
-    scale_hists = []
-    for i in range(1,10):
-        if i == 7 or i == 9: 
-            continue
+def getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
+    hists = []
+    entries = filter(lambda x: x not in exclude, entries)
+    for i in entries:
         scale_hist3D.GetZaxis().SetRange(i,i)
         # Order yx matters to have consistent axes!
         scale_hist2D = scale_hist3D.Project3D("yxe")
         scale_hist_name = scale_hist3D.GetName().replace("lheWeights", name+"_weight%i" % i)
         scale_hist2D.SetName(scale_hist_name)
         scale_hist1D = transformation(scale_hist2D, *transform_args)
-        scale_hists.append(scale_hist1D)
+        hists.append(scale_hist1D)
+    return hists
+
+def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
+    scale_hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude)
     hist_name = scale_hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "QCDscale", name+"Up"]))
     return getVariationHists(scale_hists, name, hist_name, lambda x: x[-1], lambda x: x[1])
+
+def getTransformed3DExpandedScaleHists(scale_hist3D, transformation, transform_args, name, entries, pairs=[(1,7), (3,5), (0,8)]):
+    hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude=[])
+    hist_name = scale_hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "QCDscale", name+"Up"]))
+    return makeExpandedScaleHists(hists, hist_name, name, pairs)
 
 def getTransformed3DPDFHists(hist3D, transformation, transform_args, entries, name):
     hists = []

@@ -235,7 +235,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
-            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, weight);
+            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, thweight);
         }
     }
 
