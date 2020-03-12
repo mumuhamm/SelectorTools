@@ -1,5 +1,4 @@
-from python import CombineCardTools
-from python import ConfigureJobs
+from python import ConfigureJobs,CombineCardTools,UserInput
 import sys
 import ROOT
 import logging
@@ -32,6 +31,10 @@ parser.add_argument("-r", "--rebin",
 args = parser.parse_args()
 
 channels = ["mp", "mn"]
+logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
+
+cardtool = CombineCardTools.CombineCardTools()
+
 if args.rebin:
     if ":" in args.rebin:
         args.rebin = array.array('d', UserInput.getRebin(args.rebin))
@@ -40,12 +43,6 @@ if args.rebin:
     else:
         args.rebin = int(args.rebin)
     cardtool.setRebin(args.rebin)
-
-logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
-
-cardtool = CombineCardTools.CombineCardTools()
-
-cardtool = CombineCardTools.CombineCardTools()
 
 manager_path = ConfigureJobs.getManagerPath() 
 sys.path.append("/".join([manager_path, "AnalysisDatasetManager",
@@ -82,7 +79,9 @@ cardtool.setOutputFile("ZGenCombineInput.root")
 for process in plot_groups:
     print process
     #Turn this back on when the theory uncertainties are added
-    if "minnlo" in process:
+    if "update_ref" in process or "lowcutoff" in process:
+        cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
+    elif "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
         if not args.noPdf:
             # NNPDF3.1
@@ -101,6 +100,8 @@ for process in plot_groups:
             cardtool.addTheoryVar(process, 'pdf_assymhessian', range(584, 635), central=0, specName="MMHT")
             # HERA20_EIG
             cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
+    elif "nnlops" in process:
+        cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
     elif process not in ["nonprompt", "data"]: #and False
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
         pdf_entries = [4] + (range(10, 40) if "cp5" in process else range(10, 110))

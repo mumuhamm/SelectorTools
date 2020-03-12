@@ -30,9 +30,7 @@ void ZGenSelector::Init(TTree *tree)
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
         "MET", "HT", };
     nLeptons_ = 2;
-
     NanoGenSelectorBase::Init(tree);
-    
 }
 
 void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
@@ -123,7 +121,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(histMap1D_, ("phij"+std::to_string(i)).c_str(), channel_, variation.first, jet.phi(), weight);
         }  
     }
-    if (variation.first == Central) {
+    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         for (size_t i = 0; i < *nLHEScaleWeight; i++) {
             //float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
             float thweight = LHEScaleWeight[i];

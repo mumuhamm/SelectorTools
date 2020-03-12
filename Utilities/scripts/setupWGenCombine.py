@@ -57,7 +57,8 @@ xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.valu
 channels = ["mp", "mn"]
 if args.rebin:
     if ":" in args.rebin:
-        args.rebin = array.array('d', UserInput.getRebin(args.rebin))
+        bins = UserInput.getRebin(args.rebin)
+        args.rebin = array.array('d', bins)
     elif "," in args.rebin:
         args.rebin = array.array('d', [float(i.strip()) for i in args.rebin.split(",")])
     else:
@@ -103,7 +104,7 @@ for process in plot_groups:
             # HERA20_EIG
             cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
     elif "nnlops" in process:
-        cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=4)
+        cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
         cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
         if not args.noPdf:
             # NNPDF3.1

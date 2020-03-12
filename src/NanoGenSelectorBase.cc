@@ -7,6 +7,11 @@
 
 void NanoGenSelectorBase::Init(TTree *tree)
 {
+    TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
+    doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+    if (doTheoryVars_)
+        theoryVarSysts_ = {Central, LHEParticles};
+
     b.SetTree(tree);
     SelectorBase::Init(tree);
     edm::FileInPath mc2hessianCSV("PhysicsTools/HepMCCandAlgos/data/NNPDF30_lo_as_0130_hessian_60.csv");
@@ -26,12 +31,11 @@ void NanoGenSelectorBase::Init(TTree *tree)
         else
             std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
     }
-    else if (name_.find("ref_nnpdf31")) {
+    else if (name_.find("ref_nnpdf31") != std::string::npos) {
         centralWeightIndex_ = 0;
         std::cout << "INFO: Sample will be weighted by 1st LHE weight\n";
     }
-    TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
-    doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+
     doFiducial_ = selection_ != None;
     if (!doFiducial_)
         std::cout << "INFO: No fiducial selection will be applied\n";

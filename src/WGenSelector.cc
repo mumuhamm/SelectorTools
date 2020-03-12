@@ -225,7 +225,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         }  
     }
 
-    if (variation.first == Central && doTheoryVars_) {
+    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t maxEntry = *nLHEScaleWeight+*nLHEPdfWeight;
         if (doMC2H_ == true)
             maxEntry += N_MC2HESSIAN_WEIGHTS_;
