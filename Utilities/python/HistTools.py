@@ -263,7 +263,7 @@ def makeExpandedScaleHists(hists, hist_name, name, pairs):
 
 # nano ordering is [0] is mur=0.5 muf=0.5 ; [1] is mur=0.5 muf=1 ; [2] is mur=0.5 muf=2 ; [3] is mur=1 muf=0.5 ; 
 # [4] is mur=1 muf=1 ; [5] is mur=1 muf=2 ; [6] is mur=2 muf=0.5 ; [7] is mur=2 muf=1 ; [8] is mur=2 muf=2 *
-def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10)], pairs=[(1,7), (3,5), (0,8)]):
+def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=range(1,10), pairs=[(1,7), (3,5), (0,8)]):
     hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
     return makeExpandedScaleHists(hists, hist_name, name, pairs)
 

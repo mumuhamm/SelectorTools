@@ -39,7 +39,7 @@ public :
     std::vector<LorentzVector> jets;
     LorentzVector genMet;
 
-    const unsigned int nnlopsWeightIndex_ = 9;
+    int centralWeightIndex_ = 0;
     unsigned int nLeptons_ = 1;
     static const unsigned int N_LHESCALE_WEIGHTS_ = 10;
     static const unsigned int N_LHEPDF_WEIGHTS_ = 100;
@@ -55,6 +55,9 @@ public :
     bool doBorn_ = true;
     bool doBareLeptons_ = true;
 
+    float refWeight = 1;
+
+    TH1D* mcWeights_;
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;
     TH1D* scaleWeights_;
@@ -64,9 +67,9 @@ public :
     TTreeReader     fReader;
     TTreeReaderValue<Float_t> genWeight = {fReader, "genWeight"};
     TTreeReaderValue<UInt_t> nLHEScaleWeight = {fReader, "nLHEScaleWeight"};
-    TTreeReaderValue<UInt_t> nLHEPdfWeight = {fReader, "nLHEPdfWeight"};
+    //TTreeReaderValue<UInt_t> nLHEPdfWeight = {fReader, "nLHEPdfWeight"};
     TTreeReaderArray<Float_t> LHEScaleWeight = {fReader, "LHEScaleWeight"};
-    TTreeReaderArray<Float_t> LHEPdfWeight = {fReader, "LHEPdfWeight"};
+    //TTreeReaderArray<Float_t> LHEPdfWeight = {fReader, "LHEPdfWeight"};
 
     TTreeReaderValue<UInt_t> nGenDressedLepton = {fReader, "nGenDressedLepton"};
     TTreeReaderArray<Bool_t> GenDressedLepton_hasTauAnc = {fReader, "GenDressedLepton_hasTauAnc"};

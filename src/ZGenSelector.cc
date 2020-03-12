@@ -12,11 +12,11 @@ void ZGenSelector::Init(TTree *tree)
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
         "MET", "HT",};
     hists1D_ = basehists1D;
-    std::vector<std::string> partonicChans = {"uu_dd", "uubar_ddbar", "ug_dg", "ubarg_dbarg", "gg", "other"};
-    for (auto& chan : partonicChans) {
-        for (auto& hist : basehists1D)
-            hists1D_.push_back(chan + "_" + hist);
-    }
+    //std::vector<std::string> partonicChans = {"uu_dd", "uubar_ddbar", "ug_dg", "ubarg_dbarg", "gg", "other"};
+    //for (auto& chan : partonicChans) {
+    //    for (auto& hist : basehists1D)
+    //        hists1D_.push_back(chan + "_" + hist);
+    //}
 
     doSystematics_ = true;
     systematics_ = {
@@ -90,14 +90,17 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
 
     for (int j = 0; j < (failStep == 0 ? step : failStep); j++) {
         SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, j, weight);
-        for (size_t i = 0; i < *nLHEScaleWeight+*nLHEPdfWeight; i++) {
-            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+        //for (size_t i = 0; i < *nLHEScaleWeight+*nLHEPdfWeight; i++) {
+        for (size_t i = 0; i < *nLHEScaleWeight; i++) {
+            //float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+            float thweight = LHEScaleWeight[i];
             thweight *= weight;
             SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
         }
     }
     if (doFiducial_ && failStep != 0)
         return;
+    mcWeights_->Fill(weight/refWeight);
 
     SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
     SafeHistFill(histMap1D_, "ZMass", channel_, variation.first, zCand.mass(), weight);
@@ -121,9 +124,12 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
         }  
     }
     if (variation.first == Central) {
-        for (size_t i = 0; i < *nLHEScaleWeight+*nLHEPdfWeight; i++) {
-            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+        for (size_t i = 0; i < *nLHEScaleWeight; i++) {
+            //float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+            float thweight = LHEScaleWeight[i];
             thweight *= weight;
+            if (centralWeightIndex_ != -1)
+                thweight /= LHEScaleWeight.At(centralWeightIndex_);
             SafeHistFill(weighthistMap1D_, "ZMass", channel_, variation.first, zCand.mass(), i, thweight);
             SafeHistFill(weighthistMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, "ptZ", channel_, variation.first, zCand.pt(), i, thweight);
@@ -137,6 +143,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(weighthistMap1D_, "MET", channel_, variation.first, genMet.pt(), i, thweight);
         }
     }
+    return;
     // Should check how slow this is
 
     std::string partonicChan = "other";

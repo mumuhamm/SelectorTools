@@ -30,13 +30,18 @@ void WGenSelector::Init(TTree *tree)
         {BareLeptons, "barelep"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
+        {muonScaleUp, "CMS_scale_mUp"},
+        {muonScaleDown, "CMS_scale_mDown"},
     };
     systHists_ = hists1D_;
     systHists2D_ = hists2D_;
 
     weighthists1D_ = {"CutFlow", "yW", "ptW", "mTtrue", "ptl", "etal", "phil", "ptnu", "etanu", };
     weighthists2D_ = hists2D_;
+    //weightsysts1D_ = {LHEParticles};
+    //weightsysts2D_ = {LHEParticles};
 
+    refWeight = 1;
     nLeptons_ = 1;
     doNeutrinos_ = true;
     doPhotons_ = true;
@@ -62,6 +67,20 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
     if (variation.first == Central)
         cenWeight = weight;
+    else if (variation.first == muonScaleUp && leptons.size() >= nLeptons_) {
+        auto& l = leptons.at(0);
+        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
+        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*1.0001, l.eta(), l.phi(), l.mass());
+        SetComposite();
+        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
+    }
+    else if (variation.first == muonScaleDown && leptons.size() >= nLeptons_) {
+        auto& l = leptons.at(0);
+        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
+        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*0.9999, l.eta(), l.phi(), l.mass());
+        SetComposite();
+        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
+    }
     else if (variation.first == LHEParticles)
         mWlhe = wCand.mass()*1000.;
     else if (variation.first == mWShift10MeVUp)
@@ -173,6 +192,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     auto& lep = leptons.at(0);
     if (doFiducial_ && std::abs(lep.eta()) > 2.5)
         return;
+    mcWeights_->Fill(weight/refWeight);
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
     if (doFiducial_ && lep.pt() < 25)
@@ -221,8 +241,8 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             else 
                 scaleWeights_->Fill(thweight);
             thweight *= weight;
-            if (nnlops_)
-                thweight /= LHEScaleWeight.At(nnlopsWeightIndex_);
+            if (centralWeightIndex_ != -1)
+                thweight /= LHEScaleWeight.At(centralWeightIndex_);
             SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);

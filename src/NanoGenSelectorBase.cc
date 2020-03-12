@@ -16,14 +16,19 @@ void NanoGenSelectorBase::Init(TTree *tree)
         std::cout << "INFO: Will convert MC PDF set to Hessian with MC2Hessian\n";
         pdfweightshelper_.Init(N_LHEPDF_WEIGHTS_, N_MC2HESSIAN_WEIGHTS_, mc2hessianCSV);
     }
+    centralWeightIndex_ = -1;
     // NNLOPSLike is just a config name for one MiNNLO sample
     if (name_.find("nnlops") != std::string::npos && name_.find("nnlopslike") == std::string::npos) {
         if (name_.find("nloOnly") == std::string::npos) {
-            nnlops_ = true;
+            centralWeightIndex_ = 9;
             std::cout << "INFO: NNLOPS sample will be weighted by NNLO weight\n";
         }
         else
             std::cout << "INFO: Found NNLOPS sample but not applying weight\n";
+    }
+    else if (name_.find("ref_nnpdf31")) {
+        centralWeightIndex_ = 0;
+        std::cout << "INFO: Sample will be weighted by 1st LHE weight\n";
     }
     TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
     doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
@@ -168,9 +173,11 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     }
 
     weight = *genWeight;       
+    if (refWeight == 1)
+        refWeight = weight;
 
-    if (nnlops_) {
-        weight *= LHEScaleWeight.At(nnlopsWeightIndex_);
+    if (centralWeightIndex_ != -1) {
+        weight *= LHEScaleWeight.At(centralWeightIndex_);
     }
     if (doMC2H_)
         buildHessian2MCSet();
@@ -194,15 +201,16 @@ reco::GenParticle NanoGenSelectorBase::makeGenParticle(int pdgid, int status, fl
 
 void NanoGenSelectorBase::buildHessian2MCSet() {
     double pdfWeights[N_LHEPDF_WEIGHTS_];
-    for (size_t i = 0; i < N_LHEPDF_WEIGHTS_; i++) {
-        pdfWeights[i] = LHEPdfWeight[i];
-    }
+//    for (size_t i = 0; i < N_LHEPDF_WEIGHTS_; i++) {
+//        pdfWeights[i] = LHEPdfWeight[i];
+//    }
     pdfweightshelper_.DoMC2Hessian(1., const_cast<const double*>(pdfWeights), LHEHessianPdfWeight);
 }
 
 void NanoGenSelectorBase::SetupNewDirectory() {
     SelectorBase::SetupNewDirectory();
-    AddObject<TH1D>(mcPdfWeights_, "MCweights", "MC pdf weights", 200, 0, 2);
+    AddObject<TH1D>(mcWeights_, "genWeights", "gen weights", 200, -10, 10);
+    AddObject<TH1D>(mcPdfWeights_, "MCPdfweights", "MC pdf weights", 200, 0, 2);
     AddObject<TH1D>(hesPdfWeights_, "Hesweights", "Hessian pdf weights", 200, 0, 2);
     AddObject<TH1D>(scaleWeights_, "scaleweights", "Scale weights", 200, 0, 2);
 

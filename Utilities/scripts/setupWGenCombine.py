@@ -59,7 +59,6 @@ if args.rebin:
     if ":" in args.rebin:
         args.rebin = array.array('d', UserInput.getRebin(args.rebin))
     elif "," in args.rebin:
-        print args.rebin.split(",")
         args.rebin = array.array('d', [float(i.strip()) for i in args.rebin.split(",")])
     else:
         args.rebin = int(args.rebin)
@@ -85,6 +84,7 @@ for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
+        cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
         if not args.noPdf:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
@@ -104,7 +104,10 @@ for process in plot_groups:
             cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
     elif "nnlops" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=4)
-        cardtool.setScaleVarGroups(process, [(1,7), (3,5), (0,8)])
+        cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
+        if not args.noPdf:
+            # NNPDF3.1
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(885, 986), central=0, specName="NNPDF31")
     elif process not in ["nonprompt", "data"]:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[3, 7], central=4)
         if not args.noPdf:
@@ -112,7 +115,7 @@ for process in plot_groups:
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 
-nuissance_map = {"e" : 34, "m" : 34 }
+nuissance_map = {"e" : 105, "m" : 105 }
 for chan in ["m"]:#["e", "m"]:
     cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
     logging.info("Writting cards for channel %s" % chan)

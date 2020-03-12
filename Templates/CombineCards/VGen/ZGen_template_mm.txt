@@ -13,7 +13,7 @@ observation  -1
 bin                             mm          
 process                         ${dy_sample}
 process                         5          
-rate                            ${dy_nlo}
+rate                            ${dy_yield}
 ------------                                
 lumi2016_13TeV          lnN     1.025       
 dummyErr_ee             lnN     1.02        

@@ -105,7 +105,7 @@ class CombineCardTools(object):
                 "entries" : entries,
                 "central" : central,
                 "exclude" : exclude,
-                "groups" : [(1,7), (3,5), (0,8)],
+                "groups" : [(3,6), (1,2), (4,8)],
                 "combine" : "envelope" if name == "scale" else varName.replace("pdf_", ""),
             }
         })
@@ -189,7 +189,7 @@ class CombineCardTools(object):
                     self.lumi, plotsToRead, rebin=self.rebin, overflow=False)
 
         if self.isUnrolledFit:
-            for plot in group:
+            for hist in group:
                 if not plot.InheritsFrom("TH2"):
                     continue
                 hist = HistTools.makeUnrolledHist(plot, self.unrolledBinsX, self.unrolledBinsY)
@@ -211,6 +211,7 @@ class CombineCardTools(object):
             HistTools.addOverflow(hist)
             processedHists.append(histName)
             self.yields[chan].update({processName : round(hist.Integral(), 3) if hist.Integral() > 0 else 0.0001})
+            print self.yields
 
             if chan == self.channels[0]:
                 self.yields["all"][processName] = self.yields[chan][processName]
@@ -235,7 +236,7 @@ class CombineCardTools(object):
                     expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 
                             entries=theoryVars['scale']['entries'], 
                             pairs=theoryVars['scale']['groups'], 
-                        ) if not self.isUnrolledFit and weightHist.inheritsFrom("TH3") else \
+                        ) if not self.isUnrolledFit else \
                         HistTools.getTransformed3DExpandedScaleHists(weightHist, 
                                 HistTools.makeUnrolledHist,
                             [self.unrolledBinsX, self.unrolledBinsY], processName,
@@ -310,7 +311,9 @@ class CombineCardTools(object):
         OutputTools.addMetaInfo(self.outputFile)
 
     def writeCards(self, chan, nuisances, label="", outlabel="", extraArgs={}):
+        print self.yields
         chan_dict = self.yields[chan].copy()
+        print chan_dict
         chan_dict.update(extraArgs)
         for key, value in extraArgs.iteritems():
             if "yield:" in value:
