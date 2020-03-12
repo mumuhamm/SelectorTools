@@ -67,9 +67,15 @@ public :
     TTreeReader     fReader;
     TTreeReaderValue<Float_t> genWeight = {fReader, "genWeight"};
     TTreeReaderValue<UInt_t> nLHEScaleWeight = {fReader, "nLHEScaleWeight"};
-    //TTreeReaderValue<UInt_t> nLHEPdfWeight = {fReader, "nLHEPdfWeight"};
     TTreeReaderArray<Float_t> LHEScaleWeight = {fReader, "LHEScaleWeight"};
-    //TTreeReaderArray<Float_t> LHEPdfWeight = {fReader, "LHEPdfWeight"};
+    
+    UInt_t nLHEPdfWeight = 0;
+    Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
+    UInt_t nLHEScaleWeightAltSet1 = 0;
+    Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
+
+    bool altScaleWeights_ = false;
+    bool pdfWeights_ = false;
 
     TTreeReaderValue<UInt_t> nGenDressedLepton = {fReader, "nGenDressedLepton"};
     TTreeReaderArray<Bool_t> GenDressedLepton_hasTauAnc = {fReader, "GenDressedLepton_hasTauAnc"};

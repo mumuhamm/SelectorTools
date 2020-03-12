@@ -30,9 +30,19 @@ for order in ["NLO", "NNLO", "NLO_NNLOPDF"]:
         print name
         rtfile = ROOT.TFile("%s/%s.root" % (file_path, name))
         hist = rtfile.Get("canvas").GetListOfPrimitives().FindObject(name)
+        uphist = rtfile.Get("canvas").GetListOfPrimitives().FindObject(name+"__scaleUp")
+        downhist = rtfile.Get("canvas").GetListOfPrimitives().FindObject(name+"__scaleDown")
         outfile.cd(process)
-        for var in ["lhe", ""]:
+        basevars = ["QCDscale_"+process+"Up", "QCDscale_"+process+"Down",]
+        variations = basevars + ["lhe"] + ["lhe_"+v for v in basevars]
+        
+        for var in variations:
             new_name = "_".join([key, "mm"] if var == "" else [key, var, "mm"])
-            new_hist = hist.Clone(new_name)
+            tmp = hist
+            if "Up" in var:
+                tmp = uphist
+            elif "Down" in var:
+                tmp = downhist
+            new_hist = tmp.Clone(new_name)
             new_hist.Scale(value["rebinScale"]) 
             new_hist.Write()

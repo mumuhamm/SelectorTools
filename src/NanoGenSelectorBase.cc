@@ -13,7 +13,12 @@ void NanoGenSelectorBase::Init(TTree *tree)
         theoryVarSysts_ = {Central, LHEParticles};
 
     b.SetTree(tree);
+    if (tree->GetListOfBranches()->FindObject("nLHEScaleWeightAltSet1") != nullptr)
+        altScaleWeights_ = true;
+    if (tree->GetListOfBranches()->FindObject("nLHEPdfWeight") != nullptr)
+        pdfWeights_ = true;
     SelectorBase::Init(tree);
+
     edm::FileInPath mc2hessianCSV("PhysicsTools/HepMCCandAlgos/data/NNPDF30_lo_as_0130_hessian_60.csv");
     // Off for now
     doMC2H_ = name_.find("cp5") == std::string::npos && false;
@@ -45,10 +50,26 @@ void NanoGenSelectorBase::Init(TTree *tree)
 }
 
 void NanoGenSelectorBase::SetBranchesNanoAOD() {
+    if (altScaleWeights_) {
+        b.SetSpecificBranch("nLHEScaleWeightAltSet1", nLHEScaleWeightAltSet1);
+        b.SetSpecificBranch("LHEScaleWeightAltSet1", LHEScaleWeightAltSet1);
+    }
+    if (pdfWeights_) {
+        b.SetSpecificBranch("nLHEPdfWeight", nLHEPdfWeight);
+        b.SetSpecificBranch("LHEPdfWeight", LHEPdfWeight);
+    }
 }
 
 void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
     weight = 1;
+    if (altScaleWeights_) {
+        b.SetSpecificEntry(entry, "nLHEScaleWeightAltSet1");
+        b.SetSpecificEntry(entry, "LHEScaleWeightAltSet1");
+    }
+    if (pdfWeights_) {
+        b.SetSpecificEntry(entry, "nLHEPdfWeight");
+        b.SetSpecificEntry(entry, "LHEPdfWeight");
+    }
     fReader.SetLocalEntry(entry);
 
     channel_ = channelMap_[channelName_];

@@ -88,9 +88,8 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
 
     for (int j = 0; j < (failStep == 0 ? step : failStep); j++) {
         SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, j, weight);
-        //for (size_t i = 0; i < *nLHEScaleWeight+*nLHEPdfWeight; i++) {
-        for (size_t i = 0; i < *nLHEScaleWeight; i++) {
-            //float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+        size_t nWeights = *nLHEScaleWeight;
+        for (size_t i = 0; i < nWeights; i++) {
             float thweight = LHEScaleWeight[i];
             thweight *= weight;
             SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
@@ -122,9 +121,16 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
         }  
     }
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        for (size_t i = 0; i < *nLHEScaleWeight; i++) {
-            //float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
-            float thweight = LHEScaleWeight[i];
+        size_t nWeights = *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight;
+        for (size_t i = 0; i < nWeights; i++) {
+            float thweight = 1;
+            if (i < *nLHEScaleWeight)
+                thweight = LHEScaleWeight[i];
+            else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
+                thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
+            else 
+                thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
+
             thweight *= weight;
             if (centralWeightIndex_ != -1)
                 thweight /= LHEScaleWeight.At(centralWeightIndex_);
