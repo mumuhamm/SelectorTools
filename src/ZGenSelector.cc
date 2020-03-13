@@ -17,6 +17,12 @@ void ZGenSelector::Init(TTree *tree)
     //    for (auto& hist : basehists1D)
     //        hists1D_.push_back(chan + "_" + hist);
     //}
+    systHists_ = hists1D_;
+
+    weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
+        "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
+        "MET", "HT", };
+    nLeptons_ = 2;
 
     doSystematics_ = true;
     systematics_ = {
@@ -24,17 +30,37 @@ void ZGenSelector::Init(TTree *tree)
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
     };
-    systHists_ = hists1D_;
 
-    weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
-        "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
-        "MET", "HT", };
-    nLeptons_ = 2;
     NanoGenSelectorBase::Init(tree);
 }
 
 void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
+
+    if (variation.first == LHEParticles) {
+        ptVlhe = zCand.pt();
+    }
+
+    if (variation.first == ptV0to3 && (ptVlhe < 0. || ptVlhe > 3.))
+        leptons.clear();
+    else if (variation.first == ptV3to5 && (ptVlhe < 3. || ptVlhe > 5.))
+        leptons.clear();
+    else if (variation.first == ptV5to7 && (ptVlhe < 5. || ptVlhe > 7.))
+        leptons.clear();
+    else if (variation.first == ptV7to9 && (ptVlhe < 7. || ptVlhe > 9.))
+        leptons.clear();
+    else if (variation.first == ptV9to12 && (ptVlhe < 9. || ptVlhe > 12.))
+        leptons.clear();
+    else if (variation.first == ptV12to15 && (ptVlhe < 12. || ptVlhe > 15.))
+        leptons.clear();
+    else if (variation.first == ptV15to20 && (ptVlhe < 15. || ptVlhe > 20.))
+        leptons.clear();
+    else if (variation.first == ptV20to27 && (ptVlhe < 20. || ptVlhe > 27.))
+        leptons.clear();
+    else if (variation.first == ptV27to40 && (ptVlhe < 27. || ptVlhe > 40.))
+        leptons.clear();
+    else if (variation.first == ptV40toInf && ptVlhe > 40. )
+        leptons.clear();
 
     if (leptons.size() < 2) {
         channel_ = Unknown;
@@ -88,12 +114,12 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
 
     for (int j = 0; j < (failStep == 0 ? step : failStep); j++) {
         SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, j, weight);
-        size_t nWeights = *nLHEScaleWeight;
-        for (size_t i = 0; i < nWeights; i++) {
-            float thweight = LHEScaleWeight[i];
-            thweight *= weight;
-            SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
-        }
+        //size_t nWeights = *nLHEScaleWeight;
+        //for (size_t i = 0; i < nWeights; i++) {
+        //    float thweight = LHEScaleWeight[i];
+        //    thweight *= weight;
+        //    SafeHistFill(weighthistMap1D_, "CutFlow", channel_, variation.first, j, i, thweight);
+        //}
     }
     if (doFiducial_ && failStep != 0)
         return;
@@ -121,15 +147,15 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
         }  
     }
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        size_t nWeights = *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight;
+        size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < *nLHEScaleWeight)
                 thweight = LHEScaleWeight[i];
             else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
                 thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
-            else 
-                thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
+            //else 
+            //    thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
 
             thweight *= weight;
             if (centralWeightIndex_ != -1)

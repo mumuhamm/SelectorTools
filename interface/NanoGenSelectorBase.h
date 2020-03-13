@@ -41,8 +41,8 @@ public :
 
     int centralWeightIndex_ = 0;
     unsigned int nLeptons_ = 1;
-    static const unsigned int N_LHESCALE_WEIGHTS_ = 10;
-    static const unsigned int N_LHEPDF_WEIGHTS_ = 100;
+    static const unsigned int N_LHESCALE_WEIGHTS_ = 1000;
+    static const unsigned int N_LHEPDF_WEIGHTS_ = 2000;
     static const unsigned int N_LHEPDFAS_WEIGHTS_ = 102;
     static const unsigned int N_MC2HESSIAN_WEIGHTS_ = 60;
     float weight;
@@ -73,6 +73,11 @@ public :
     Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
     UInt_t nLHEScaleWeightAltSet1 = 0;
     Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
+
+    TBranch* b_nLHEPdfWeight;
+    TBranch* b_LHEPdfWeight;
+    TBranch* b_nLHEScaleWeightAltSet1;
+    TBranch* b_LHEScaleWeightAltSet1;
 
     bool altScaleWeights_ = false;
     bool pdfWeights_ = false;
@@ -108,6 +113,7 @@ public :
     TTreeReaderValue<Float_t> MET_fiducialGenPt = {fReader, "MET_fiducialGenPt"};
     TTreeReaderValue<Float_t> MET_fiducialGenPhi = {fReader, "MET_fiducialGenPhi"};
     float ht;
+    float ptVlhe;
     
     BranchManager b;
     

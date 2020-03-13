@@ -69,17 +69,13 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         cenWeight = weight;
     else if (variation.first == muonScaleUp && leptons.size() >= nLeptons_) {
         auto& l = leptons.at(0);
-        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
         leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*1.0001, l.eta(), l.phi(), l.mass());
         SetComposite();
-        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
     }
     else if (variation.first == muonScaleDown && leptons.size() >= nLeptons_) {
         auto& l = leptons.at(0);
-        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
         leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*0.9999, l.eta(), l.phi(), l.mass());
         SetComposite();
-        std::cout << "lepton pt is " << leptons.at(0).pt() << std::endl;
     }
     else if (variation.first == LHEParticles)
         mWlhe = wCand.mass()*1000.;
@@ -103,6 +99,31 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         weight = cenWeight*breitWignerWeight(100.);
     else if (variation.first == mWShift100MeVDown)
         weight = cenWeight*breitWignerWeight(-100.);
+
+    if (variation.first == LHEParticles) {
+        ptVlhe = wCand.pt();
+    }
+
+    if (variation.first == ptV0to3 && (ptVlhe < 0. || ptVlhe > 3.))
+        leptons.clear();
+    else if (variation.first == ptV3to5 && (ptVlhe < 3. || ptVlhe > 5.))
+        leptons.clear();
+    else if (variation.first == ptV5to7 && (ptVlhe < 5. || ptVlhe > 7.))
+        leptons.clear();
+    else if (variation.first == ptV7to9 && (ptVlhe < 7. || ptVlhe > 9.))
+        leptons.clear();
+    else if (variation.first == ptV9to12 && (ptVlhe < 9. || ptVlhe > 12.))
+        leptons.clear();
+    else if (variation.first == ptV12to15 && (ptVlhe < 12. || ptVlhe > 15.))
+        leptons.clear();
+    else if (variation.first == ptV15to20 && (ptVlhe < 15. || ptVlhe > 20.))
+        leptons.clear();
+    else if (variation.first == ptV20to27 && (ptVlhe < 20. || ptVlhe > 27.))
+        leptons.clear();
+    else if (variation.first == ptV27to40 && (ptVlhe < 27. || ptVlhe > 40.))
+        leptons.clear();
+    else if (variation.first == ptV40toInf && ptVlhe > 40. )
+        leptons.clear();
 
     if (leptons.size() > 0 && std::abs(leptons.at(0).pdgId()) == 11) {
         if (leptons.at(0).pdgId() > 0) {

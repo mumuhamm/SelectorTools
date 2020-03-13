@@ -60,6 +60,7 @@ enum Systematic {
     BareLeptons, BornParticles, LHEParticles,
     mWShift100MeVUp, mWShift50MeVUp, mWShift25MeVUp, mWShift20MeVUp, mWShift10MeVUp, 
     mWShift100MeVDown, mWShift50MeVDown, mWShift25MeVDown, mWShift20MeVDown, mWShift10MeVDown, 
+    ptV0to3, ptV3to5, ptV5to7, ptV7to9, ptV9to12, ptV12to15, ptV15to20, ptV20to27, ptV27to40, ptV40toInf,
 }; 
 
     
