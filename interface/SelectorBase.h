@@ -61,6 +61,8 @@ enum Systematic {
     mWShift100MeVUp, mWShift50MeVUp, mWShift25MeVUp, mWShift20MeVUp, mWShift10MeVUp, 
     mWShift100MeVDown, mWShift50MeVDown, mWShift25MeVDown, mWShift20MeVDown, mWShift10MeVDown, 
     ptV0to3, ptV3to5, ptV5to7, ptV7to9, ptV9to12, ptV12to15, ptV15to20, ptV20to27, ptV27to40, ptV40toInf,
+    ptV0to3_lhe, ptV3to5_lhe, ptV5to7_lhe, ptV7to9_lhe, ptV9to12_lhe, ptV12to15_lhe, 
+    ptV15to20_lhe, ptV20to27_lhe, ptV27to40_lhe, ptV40toInf_lhe,
 }; 
 
     

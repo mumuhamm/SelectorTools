@@ -41,27 +41,6 @@ void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std
         ptVlhe = zCand.pt();
     }
 
-    if (variation.first == ptV0to3 && (ptVlhe < 0. || ptVlhe > 3.))
-        leptons.clear();
-    else if (variation.first == ptV3to5 && (ptVlhe < 3. || ptVlhe > 5.))
-        leptons.clear();
-    else if (variation.first == ptV5to7 && (ptVlhe < 5. || ptVlhe > 7.))
-        leptons.clear();
-    else if (variation.first == ptV7to9 && (ptVlhe < 7. || ptVlhe > 9.))
-        leptons.clear();
-    else if (variation.first == ptV9to12 && (ptVlhe < 9. || ptVlhe > 12.))
-        leptons.clear();
-    else if (variation.first == ptV12to15 && (ptVlhe < 12. || ptVlhe > 15.))
-        leptons.clear();
-    else if (variation.first == ptV15to20 && (ptVlhe < 15. || ptVlhe > 20.))
-        leptons.clear();
-    else if (variation.first == ptV20to27 && (ptVlhe < 20. || ptVlhe > 27.))
-        leptons.clear();
-    else if (variation.first == ptV27to40 && (ptVlhe < 27. || ptVlhe > 40.))
-        leptons.clear();
-    else if (variation.first == ptV40toInf && ptVlhe > 40. )
-        leptons.clear();
-
     if (leptons.size() < 2) {
         channel_ = Unknown;
         channelName_ = "Unknown";
@@ -123,7 +102,61 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     }
     if (doFiducial_ && failStep != 0)
         return;
-    mcWeights_->Fill(weight/refWeight);
+    if (variation.first == Central)
+        mcWeights_->Fill(weight/refWeight);
+
+    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+        size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
+        for (size_t i = 0; i < nWeights; i++) {
+            float thweight = 1;
+            if (i < *nLHEScaleWeight)
+                thweight = LHEScaleWeight[i];
+            else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
+                thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
+            else 
+                thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
+            if (centralWeightIndex_ != -1)
+                thweight /= LHEScaleWeight.At(centralWeightIndex_);
+
+            if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
+                    ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||
+                    ((variation.first == ptV5to7 || variation.first == ptV5to7_lhe) && (ptVlhe < 5. || ptVlhe > 7.)) ||
+                    ((variation.first == ptV7to9 || variation.first == ptV7to9_lhe) && (ptVlhe < 7. || ptVlhe > 9.)) ||
+                    ((variation.first == ptV9to12 || variation.first == ptV9to12_lhe) && (ptVlhe < 9. || ptVlhe > 12.)) ||
+                    ((variation.first == ptV12to15 || variation.first == ptV12to15_lhe) && (ptVlhe < 12. || ptVlhe > 15.)) ||
+                    ((variation.first == ptV15to20 || variation.first == ptV15to20_lhe) && (ptVlhe < 15. || ptVlhe > 20.)) ||
+                    ((variation.first == ptV20to27 || variation.first == ptV20to27_lhe) && (ptVlhe < 20. || ptVlhe > 27.)) ||
+                    ((variation.first == ptV27to40 || variation.first == ptV27to40_lhe) && (ptVlhe < 27. || ptVlhe > 40.)) ||
+                    ((variation.first == ptV40toInf || variation.first == ptV40toInf_lhe) && ptVlhe < 40. )) {
+                thweight = 1;
+            }
+
+            thweight *= weight;
+            SafeHistFill(weighthistMap1D_, "ZMass", channel_, variation.first, zCand.mass(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "ptZ", channel_, variation.first, zCand.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "ptl1", channel_, variation.first, lep1.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "etal1", channel_, variation.first, lep1.eta(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "phil1", channel_, variation.first, lep1.phi(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "ptl2", channel_, variation.first, lep2.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "etal2", channel_, variation.first, lep2.eta(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "phil2", channel_, variation.first, lep2.phi(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "nJets", channel_, variation.first, jets.size(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "MET", channel_, variation.first, genMet.pt(), i, thweight);
+        }
+    }
+    if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
+            ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||
+            ((variation.first == ptV5to7 || variation.first == ptV5to7_lhe) && (ptVlhe < 5. || ptVlhe > 7.)) ||
+            ((variation.first == ptV7to9 || variation.first == ptV7to9_lhe) && (ptVlhe < 7. || ptVlhe > 9.)) ||
+            ((variation.first == ptV9to12 || variation.first == ptV9to12_lhe) && (ptVlhe < 9. || ptVlhe > 12.)) ||
+            ((variation.first == ptV12to15 || variation.first == ptV12to15_lhe) && (ptVlhe < 12. || ptVlhe > 15.)) ||
+            ((variation.first == ptV15to20 || variation.first == ptV15to20_lhe) && (ptVlhe < 15. || ptVlhe > 20.)) ||
+            ((variation.first == ptV20to27 || variation.first == ptV20to27_lhe) && (ptVlhe < 20. || ptVlhe > 27.)) ||
+            ((variation.first == ptV27to40 || variation.first == ptV27to40_lhe) && (ptVlhe < 27. || ptVlhe > 40.)) ||
+            ((variation.first == ptV40toInf || variation.first == ptV40toInf_lhe) && ptVlhe < 40. )) {
+        return;
+    }
 
     SafeHistFill(histMap1D_, "CutFlow", channel_, variation.first, step++, weight);
     SafeHistFill(histMap1D_, "ZMass", channel_, variation.first, zCand.mass(), weight);
@@ -146,35 +179,9 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(histMap1D_, ("phij"+std::to_string(i)).c_str(), channel_, variation.first, jet.phi(), weight);
         }  
     }
-    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
-        for (size_t i = 0; i < nWeights; i++) {
-            float thweight = 1;
-            if (i < *nLHEScaleWeight)
-                thweight = LHEScaleWeight[i];
-            else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
-                thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
-            //else 
-            //    thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
-
-            thweight *= weight;
-            if (centralWeightIndex_ != -1)
-                thweight /= LHEScaleWeight.At(centralWeightIndex_);
-            SafeHistFill(weighthistMap1D_, "ZMass", channel_, variation.first, zCand.mass(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "ptZ", channel_, variation.first, zCand.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "ptl1", channel_, variation.first, lep1.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "etal1", channel_, variation.first, lep1.eta(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "phil1", channel_, variation.first, lep1.phi(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "ptl2", channel_, variation.first, lep2.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "etal2", channel_, variation.first, lep2.eta(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "phil2", channel_, variation.first, lep2.phi(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "nJets", channel_, variation.first, jets.size(), i, thweight);
-            SafeHistFill(weighthistMap1D_, "MET", channel_, variation.first, genMet.pt(), i, thweight);
-        }
-    }
+    
+    // Should check how slow this is. For now it's off 
     return;
-    // Should check how slow this is
 
     std::string partonicChan = "other";
     if ((*Generator_id1 == 1 && *Generator_id2 == 1) || (*Generator_id1 == 2 && *Generator_id2 == 2))
@@ -189,7 +196,6 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     else if ((*Generator_id1 == -1 && *Generator_id2 == 21) || (*Generator_id1 == 21 && *Generator_id2 == -1) || 
                 (*Generator_id1 == -2 && *Generator_id2 == 21) || (*Generator_id1 == 21 && *Generator_id2 == -2))
         partonicChan = "ubarg_dbarg";
-
     SafeHistFill(histMap1D_, (partonicChan+"_ZMass").c_str(), channel_, variation.first, zCand.mass(), weight);
     SafeHistFill(histMap1D_, (partonicChan+"_yZ").c_str(), channel_, variation.first, zCand.Rapidity(), weight);
     SafeHistFill(histMap1D_, (partonicChan+"_ptZ").c_str(), channel_, variation.first, zCand.pt(), weight);

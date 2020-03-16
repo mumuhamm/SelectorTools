@@ -46,8 +46,10 @@ def makeUnrolledHist(init_2D_hist, xbins, ybins, name=""):
         ybinned_hist = ybinned_hist.Rebin(len(xbins)-1, hist_name+"_rebin", xbins)
         hists_half_rolled.append(ybinned_hist)
 
+    print "Name was", name
     if name is "":
         name = init_2D_hist.GetName().replace("2D", "unrolled")
+    print "Name is", name
     unrolled_hist = ROOT.TH1D(name, "Unrolled", nbins, 0, nbins)
     unrolled_hist.SetDirectory(init_2D_hist.GetDirectory())
     for i, hist in enumerate(hists_half_rolled):
@@ -326,17 +328,20 @@ def getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name,
 
 def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
     scale_hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude)
-    hist_name = scale_hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "QCDscale", name+"Up"]))
+    hist_name = scale_hist3D.GetName().replace("2D", "unrolled")
+    hist_name = hist_name.replace("lheWeights", "_".join(["QCDscale", name+"Up"]))
     return getVariationHists(scale_hists, name, hist_name, lambda x: x[-1], lambda x: x[1])
 
 def getTransformed3DExpandedScaleHists(scale_hist3D, transformation, transform_args, name, entries, pairs=[(1,7), (3,5), (0,8)]):
     hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude=[])
-    hist_name = scale_hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "QCDscale", name+"Up"]))
+    hist_name = scale_hist3D.GetName().replace("2D", "unrolled")
+    hist_name = hist_name.replace("lheWeights", "_".join(["QCDscale", name+"Up"]))
     return makeExpandedScaleHists(hists, hist_name, name, pairs)
 
 def getTransformed3DSymMCPDFVarHists(hist3D, transformation, transform_args, entries, name):
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries, exclude=[])
-    hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf", name+"Up"]))
+    hist_name = hist3D.GetName().replace("2D", "unrolled")
+    hist_name = hist_name.replace("lheWeights", "_".join(["pdf", name+"Up"]))
     return getVariationHists(hists, name, hist_name, 
             lambda x: x[0]*(1+getPDFPercentVariation(x)), 
             lambda x: x[0]*(1-getPDFPercentVariation(x))

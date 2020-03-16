@@ -36,10 +36,8 @@ void WGenSelector::Init(TTree *tree)
     systHists_ = hists1D_;
     systHists2D_ = hists2D_;
 
-    weighthists1D_ = {"CutFlow", "yW", "ptW", "mTtrue", "ptl", "etal", "phil", "ptnu", "etanu", };
+    weighthists1D_ = {"CutFlow", "yW", "ptW", "ptl", "etal", "ptnu", "etanu", };
     weighthists2D_ = hists2D_;
-    //weightsysts1D_ = {LHEParticles};
-    //weightsysts2D_ = {LHEParticles};
 
     refWeight = 1;
     nLeptons_ = 1;
@@ -103,27 +101,6 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     if (variation.first == LHEParticles) {
         ptVlhe = wCand.pt();
     }
-
-    if (variation.first == ptV0to3 && (ptVlhe < 0. || ptVlhe > 3.))
-        leptons.clear();
-    else if (variation.first == ptV3to5 && (ptVlhe < 3. || ptVlhe > 5.))
-        leptons.clear();
-    else if (variation.first == ptV5to7 && (ptVlhe < 5. || ptVlhe > 7.))
-        leptons.clear();
-    else if (variation.first == ptV7to9 && (ptVlhe < 7. || ptVlhe > 9.))
-        leptons.clear();
-    else if (variation.first == ptV9to12 && (ptVlhe < 9. || ptVlhe > 12.))
-        leptons.clear();
-    else if (variation.first == ptV12to15 && (ptVlhe < 12. || ptVlhe > 15.))
-        leptons.clear();
-    else if (variation.first == ptV15to20 && (ptVlhe < 15. || ptVlhe > 20.))
-        leptons.clear();
-    else if (variation.first == ptV20to27 && (ptVlhe < 20. || ptVlhe > 27.))
-        leptons.clear();
-    else if (variation.first == ptV27to40 && (ptVlhe < 27. || ptVlhe > 40.))
-        leptons.clear();
-    else if (variation.first == ptV40toInf && ptVlhe > 40. )
-        leptons.clear();
 
     if (leptons.size() > 0 && std::abs(leptons.at(0).pdgId()) == 11) {
         if (leptons.at(0).pdgId() > 0) {
@@ -213,11 +190,75 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     auto& lep = leptons.at(0);
     if (doFiducial_ && std::abs(lep.eta()) > 2.5)
         return;
-    mcWeights_->Fill(weight/refWeight);
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
+
+    if (variation.first == Central)
+        mcWeights_->Fill(weight/refWeight);
 
     if (doFiducial_ && lep.pt() < 25)
         return;
+
+    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+        size_t maxEntry = *nLHEScaleWeight+*nLHEPdfWeight;
+        if (doMC2H_ == true)
+            maxEntry += N_MC2HESSIAN_WEIGHTS_;
+
+        for (size_t i = 0; i < maxEntry; i++) {
+            //float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
+            //        : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
+            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
+            if (i > *nLHEScaleWeight && i < *nLHEScaleWeight+*nLHEPdfWeight)
+                mcPdfWeights_->Fill(thweight);
+            else if (i > *nLHEScaleWeight+*nLHEPdfWeight)
+                hesPdfWeights_->Fill(thweight);
+            else 
+                scaleWeights_->Fill(thweight);
+
+            if (centralWeightIndex_ != -1)
+                thweight /= LHEScaleWeight.At(centralWeightIndex_);
+
+            if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
+                    ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||
+                    ((variation.first == ptV5to7 || variation.first == ptV5to7_lhe) && (ptVlhe < 5. || ptVlhe > 7.)) ||
+                    ((variation.first == ptV7to9 || variation.first == ptV7to9_lhe) && (ptVlhe < 7. || ptVlhe > 9.)) ||
+                    ((variation.first == ptV9to12 || variation.first == ptV9to12_lhe) && (ptVlhe < 9. || ptVlhe > 12.)) ||
+                    ((variation.first == ptV12to15 || variation.first == ptV12to15_lhe) && (ptVlhe < 12. || ptVlhe > 15.)) ||
+                    ((variation.first == ptV15to20 || variation.first == ptV15to20_lhe) && (ptVlhe < 15. || ptVlhe > 20.)) ||
+                    ((variation.first == ptV20to27 || variation.first == ptV20to27_lhe) && (ptVlhe < 20. || ptVlhe > 27.)) ||
+                    ((variation.first == ptV27to40 || variation.first == ptV27to40_lhe) && (ptVlhe < 27. || ptVlhe > 40.)) ||
+                    ((variation.first == ptV40toInf || variation.first == ptV40toInf_lhe) && ptVlhe < 40. )) {
+                thweight = 1;
+            }
+
+            thweight *= weight;
+            SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("mWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("yWmet", toAppend), channel_, variation.first, wCandMet.Rapidity(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("ptWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
+            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, thweight);
+        }
+    }
+
+    if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
+            ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||
+            ((variation.first == ptV5to7 || variation.first == ptV5to7_lhe) && (ptVlhe < 5. || ptVlhe > 7.)) ||
+            ((variation.first == ptV7to9 || variation.first == ptV7to9_lhe) && (ptVlhe < 7. || ptVlhe > 9.)) ||
+            ((variation.first == ptV9to12 || variation.first == ptV9to12_lhe) && (ptVlhe < 9. || ptVlhe > 12.)) ||
+            ((variation.first == ptV12to15 || variation.first == ptV12to15_lhe) && (ptVlhe < 12. || ptVlhe > 15.)) ||
+            ((variation.first == ptV15to20 || variation.first == ptV15to20_lhe) && (ptVlhe < 15. || ptVlhe > 20.)) ||
+            ((variation.first == ptV20to27 || variation.first == ptV20to27_lhe) && (ptVlhe < 20. || ptVlhe > 27.)) ||
+            ((variation.first == ptV27to40 || variation.first == ptV27to40_lhe) && (ptVlhe < 27. || ptVlhe > 40.)) ||
+            ((variation.first == ptV40toInf || variation.first == ptV40toInf_lhe) && ptVlhe < 40. )) {
+        return;
+    }
 
     SafeHistFill(histMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.mass(), weight);
     SafeHistFill(histMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), weight);
@@ -244,40 +285,6 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             SafeHistFill(histMap1D_, concatenateNames(("etaj"+std::to_string(i)).c_str(), toAppend), channel_, variation.first, jet.eta(), weight);
             SafeHistFill(histMap1D_, concatenateNames(("phij"+std::to_string(i)).c_str(), toAppend), channel_, variation.first, jet.phi(), weight);
         }  
-    }
-
-    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        size_t maxEntry = *nLHEScaleWeight+*nLHEPdfWeight;
-        if (doMC2H_ == true)
-            maxEntry += N_MC2HESSIAN_WEIGHTS_;
-
-        for (size_t i = 0; i < maxEntry; i++) {
-            //float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
-            //        : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
-            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
-            if (i > *nLHEScaleWeight && i < *nLHEScaleWeight+*nLHEPdfWeight)
-                mcPdfWeights_->Fill(thweight);
-            else if (i > *nLHEScaleWeight+*nLHEPdfWeight)
-                hesPdfWeights_->Fill(thweight);
-            else 
-                scaleWeights_->Fill(thweight);
-            thweight *= weight;
-            if (centralWeightIndex_ != -1)
-                thweight /= LHEScaleWeight.At(centralWeightIndex_);
-            SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("mWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("yWmet", toAppend), channel_, variation.first, wCandMet.Rapidity(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("ptWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
-            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, thweight);
-        }
     }
 
     if (variation.first == BareLeptons) {

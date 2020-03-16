@@ -71,7 +71,7 @@ if "unrolled" in args.fitvar:
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
-cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV"])
+cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV", "CMS_scale_m"])
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
 
@@ -81,6 +81,10 @@ cardtool.setOutputFile("WGenCombineInput.root")
 #cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
 #cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
 cardtool.setCombineChannels({"m" : ["mp"]})
+
+ptbins = [0,3,5,7,9,12,15,20,27,40,100]
+ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
+
 for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
@@ -113,6 +117,12 @@ for process in plot_groups:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[3, 7], central=4)
         if not args.noPdf:
             cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
+
+    for pair in ptbinPairs:
+        varName = 'ptV%ito%i' % pair
+        varName = varName.replace("100", "Inf")
+        cardtool.addScaleBasedVar(process, varName) 
+
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 

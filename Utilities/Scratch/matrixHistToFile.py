@@ -9,7 +9,7 @@ variables = {
         "rebinScale" : 0.1*0.001,
     },
 }
-pdf = "30"
+pdf = "31"
 outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_NNPDF%s.root" % pdf
 
 outfile = ROOT.TFile(outfile_name, "recreate")

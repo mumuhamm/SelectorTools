@@ -76,8 +76,11 @@ cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/ZGen/%s" % folder_na
 cardtool.setLumi(35.9)
 cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("ZGenCombineInput.root")
+
+ptbins = [0,3,5,7,9,12,15,20,27,40,100]
+ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
+
 for process in plot_groups:
-    print process
     #Turn this back on when the theory uncertainties are added
     if "update_ref" in process or "lowcutoff" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
@@ -107,6 +110,12 @@ for process in plot_groups:
         pdf_entries = [4] + (range(10, 40) if "cp5" in process else range(10, 110))
         #cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" in process else "pdf_hessian", pdf_entries, central=0)
         cardtool.addTheoryVar(process, 'pdf_hessian', pdf_entries, central=0)
+
+    for pair in ptbinPairs:
+        varName = 'ptV%ito%i' % pair
+        varName = varName.replace("100", "Inf")
+        cardtool.addScaleBasedVar(process, varName) 
+
     cardtool.loadHistsForProcess(process)
     cardtool.writeProcessHistsToOutput(process)
 

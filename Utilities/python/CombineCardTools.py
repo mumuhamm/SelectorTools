@@ -73,8 +73,11 @@ class CombineCardTools(object):
             variations = [x+y for x in variations for y in ["Up", "Down"]]
         self.variations[process] = variations
 
-    def weightHistName(self, channel, process):
+    def weightHistName(self, channel, process, append=""):
         fitVariable = self.getFitVariable(process)
+        if append != "":
+            # Removing LHE is just a hack for now!
+            fitVariable = fitVariable + "_" + append
         variable = fitVariable.replace("unrolled", "2D") if self.isUnrolledFit else fitVariable
         return "_".join([variable, "lheWeights", channel])
 
@@ -109,6 +112,17 @@ class CombineCardTools(object):
                 "combine" : "envelope" if name == "scale" else varName.replace("pdf_", ""),
             }
         })
+
+    def addScaleBasedVar(self, processName, variation):
+        if 'scale' not in self.theoryVariations[processName]:
+            raise ValueError("Scale variations not defined for process %s." % processName \
+                                + " Can't add additional variation." % procesName)
+
+        scaleVars = self.theoryVariations[processName]['scale']
+        if 'theoryBasedVars' not in scaleVars:
+            scaleVars['theoryBasedVars'] = [variation]
+        else:
+            scaleVars['theoryBasedVars'].append(variation)
 
     def getRootFile(self, rtfile, mode=None):
         if type(rtfile) == str:
@@ -176,8 +190,12 @@ class CombineCardTools(object):
         plots = ["_".join([fitVariable, chan]) for chan in self.channels]
         variations = self.getVariationsForProcess(processName)
         plots += ["_".join([fitVariable, var, c]) for var in variations for c in self.channels]
-        if processName in self.theoryVariations.keys():
+        if processName in self.theoryVariations:
             plots += [self.weightHistName(c, processName) for c in self.channels]
+            theoryVars = self.theoryVariations[processName]
+            if 'scale' in theoryVars and 'theoryBasedVars' in theoryVars['scale']:
+                thVars = theoryVars['scale']['theoryBasedVars']
+                plots += [self.weightHistName(c, processName, a) for c in self.channels for a in thVars]
         return plots
 
     # processName needs to match a PlotGroup 
@@ -190,9 +208,9 @@ class CombineCardTools(object):
 
         if self.isUnrolledFit:
             for hist in group:
-                if not plot.InheritsFrom("TH2"):
+                if not "TH2" in hist.ClassName():
                     continue
-                hist = HistTools.makeUnrolledHist(plot, self.unrolledBinsX, self.unrolledBinsY)
+                hist = HistTools.makeUnrolledHist(hist, self.unrolledBinsX, self.unrolledBinsY)
                 histName = hist.GetName()
                 group.Add(hist)
 
@@ -211,40 +229,24 @@ class CombineCardTools(object):
             HistTools.addOverflow(hist)
             processedHists.append(histName)
             self.yields[chan].update({processName : round(hist.Integral(), 3) if hist.Integral() > 0 else 0.0001})
-            print self.yields
 
             if chan == self.channels[0]:
                 self.yields["all"][processName] = self.yields[chan][processName]
             else:
                 self.yields["all"][processName] += self.yields[chan][processName]
 
+            scaleHists = []
             if processName in self.theoryVariations:
-                weightHist = group.FindObject(self.weightHistName(chan, processName))
-                if not weightHist:
-                    logging.warning("Failed to find %s. Skipping" % self.weightHistName(chan, processName))
-                    continue
                 theoryVars = self.theoryVariations[processName]
-                scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
-                        entries=theoryVars['scale']['entries'], 
-                        exclude=theoryVars['scale']['exclude'], 
-                        central=theoryVars['scale']['central']) if not self.isUnrolledFit else \
-                    HistTools.getTransformed3DScaleHists(weightHist, HistTools.makeUnrolledHist,
-                            [self.unrolledBinsX, self.unrolledBinsY], processName,
-                        entries=theoryVars['scale']['entries'], 
-                        exclude=theoryVars['scale']['exclude'])
-                if expandedTheory:
-                    expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 
-                            entries=theoryVars['scale']['entries'], 
-                            pairs=theoryVars['scale']['groups'], 
-                        ) if not self.isUnrolledFit else \
-                        HistTools.getTransformed3DExpandedScaleHists(weightHist, 
-                                HistTools.makeUnrolledHist,
-                            [self.unrolledBinsX, self.unrolledBinsY], processName,
-                            entries=theoryVars['scale']['entries'], 
-                            pairs=theoryVars['scale']['groups'], 
-                        )
-                        
-                    scaleHists.extend(expandedScaleHists)
+                try:
+                    scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory))
+                except ValueError as e:
+                    logging.warning(e)
+                    continue
+
+                if 'theoryBasedVars' in theoryVars['scale']:
+                    for theoryBasedVar in theoryVars['scale']['theoryBasedVars']:
+                        scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory, theoryBasedVar))
 
                 pdfHists = []
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
@@ -293,6 +295,37 @@ class CombineCardTools(object):
 
         self.histData[processName] = group
 
+    def scaleHistsForProcess(self, group, processName, chan, expandedTheory, append=""):
+        weightHist = group.FindObject(self.weightHistName(chan, processName, append))
+        if not weightHist:
+            raise ValueError("Failed to find %s. Skipping" % self.weightHistName(chan, processName, append))
+        if 'scale' not in self.theoryVariations[processName]:
+            return []
+        scaleVars = self.theoryVariations[processName]['scale']
+
+        scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
+                entries=scaleVars['entries'], 
+                exclude=scaleVars['exclude'], 
+                central=scaleVars['central']) if not self.isUnrolledFit else \
+            HistTools.getTransformed3DScaleHists(weightHist, HistTools.makeUnrolledHist,
+                    [self.unrolledBinsX, self.unrolledBinsY], processName,
+                entries=scaleVars['entries'], 
+                exclude=scaleVars['exclude'])
+        if expandedTheory:
+            expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 
+                    entries=scaleVars['entries'], 
+                    pairs=scaleVars['groups'], 
+                ) if not self.isUnrolledFit else \
+                HistTools.getTransformed3DExpandedScaleHists(weightHist, 
+                        HistTools.makeUnrolledHist,
+                    [self.unrolledBinsX, self.unrolledBinsY], processName,
+                    entries=scaleVars['entries'], 
+                    pairs=scaleVars['groups'], 
+                )
+                
+            scaleHists.extend(expandedScaleHists)
+        return scaleHists
+
     #def makeNuisanceShapeOnly(process, central_hist, uncertainty, channels):
     #    for chan in channels:
     #        central_hist = self.histData[process].FindObject("_".join([central_hist, chan]))
@@ -311,9 +344,7 @@ class CombineCardTools(object):
         OutputTools.addMetaInfo(self.outputFile)
 
     def writeCards(self, chan, nuisances, label="", outlabel="", extraArgs={}):
-        print self.yields
         chan_dict = self.yields[chan].copy()
-        print chan_dict
         chan_dict.update(extraArgs)
         for key, value in extraArgs.iteritems():
             if "yield:" in value:

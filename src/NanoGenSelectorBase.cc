@@ -17,6 +17,9 @@ void NanoGenSelectorBase::Init(TTree *tree)
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");
     if (doTheoryVars_ && doPtVSplit != nullptr && doPtVSplit->GetVal()) {
+        // For now it's based on the LHE kinematics
+        TNamed* selection = (TNamed *) GetInputList()->FindObject("selection");
+        std::string selectionName = selection == nullptr ? "" : selection->GetTitle();
         SystMap ptvars = {
             {ptV0to3, "ptV0to3"},
             {ptV3to5, "ptV3to5"},
@@ -29,6 +32,20 @@ void NanoGenSelectorBase::Init(TTree *tree)
             {ptV27to40, "ptV27to40"},
             {ptV40toInf, "ptV40toInf"},
         };
+        if (selectionName == "None") {
+            ptvars = {
+                {ptV0to3_lhe, "lhe_ptV0to3"},
+                {ptV3to5_lhe, "lhe_ptV3to5"},
+                {ptV5to7_lhe, "lhe_ptV5to7"},
+                {ptV7to9_lhe, "lhe_ptV7to9"},
+                {ptV9to12_lhe, "lhe_ptV9to12"},
+                {ptV12to15_lhe, "lhe_ptV12to15"},
+                {ptV15to20_lhe, "lhe_ptV15to20"},
+                {ptV20to27_lhe, "lhe_ptV20to27"},
+                {ptV27to40_lhe, "lhe_ptV27to40"},
+                {ptV40toInf_lhe, "lhe_ptV40toInf"},
+            };
+        }
         for (auto& var : ptvars) {
             systematics_[var.first] = var.second;
             theoryVarSysts_.insert(theoryVarSysts_.end(), var.first);
@@ -197,6 +214,19 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
             }
         }
         std::sort(lheLeptons.begin(), lheLeptons.end(), compareMaxByPt);
+        leptons = lheLeptons;
+        neutrinos = lheNeutrinos;
+    }
+    else if (variation.first == ptV0to3_lhe ||
+            variation.first == ptV3to5_lhe || 
+            variation.first == ptV5to7_lhe ||
+            variation.first == ptV7to9_lhe ||
+            variation.first == ptV9to12_lhe ||
+            variation.first == ptV12to15_lhe || 
+            variation.first == ptV15to20_lhe ||
+            variation.first == ptV20to27_lhe ||
+            variation.first == ptV27to40_lhe ||
+            variation.first == ptV40toInf_lhe ) {
         leptons = lheLeptons;
         neutrinos = lheNeutrinos;
     }
