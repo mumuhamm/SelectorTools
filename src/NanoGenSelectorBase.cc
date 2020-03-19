@@ -258,7 +258,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         refWeight = weight;
 
     if (centralWeightIndex_ != -1) {
-        //weight *= LHEScaleWeight.At(centralWeightIndex_);
+        weight *= LHEScaleWeight.At(centralWeightIndex_);
     }
     if (doMC2H_)
         buildHessian2MCSet();

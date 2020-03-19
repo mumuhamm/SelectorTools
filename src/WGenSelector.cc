@@ -3,6 +3,7 @@
 #include <TStyle.h>
 #include <regex>
 #include <cmath>
+#include <TRandom3.h>
 
 void WGenSelector::Init(TTree *tree)
 {
@@ -65,18 +66,18 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
     if (variation.first == Central)
         cenWeight = weight;
+    else if (variation.first == LHEParticles)
+        mWlhe = wCand.mass()*1000.;
     else if (variation.first == muonScaleUp && leptons.size() >= nLeptons_) {
         auto& l = leptons.at(0);
-        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*1.0001, l.eta(), l.phi(), l.mass());
+        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*1.001, l.eta(), l.phi(), l.mass());
         SetComposite();
     }
     else if (variation.first == muonScaleDown && leptons.size() >= nLeptons_) {
         auto& l = leptons.at(0);
-        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*0.9999, l.eta(), l.phi(), l.mass());
+        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*0.999, l.eta(), l.phi(), l.mass());
         SetComposite();
     }
-    else if (variation.first == LHEParticles)
-        mWlhe = wCand.mass()*1000.;
     else if (variation.first == mWShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
     else if (variation.first == mWShift10MeVDown)
@@ -198,22 +199,24 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     if (doFiducial_ && lep.pt() < 25)
         return;
 
-    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        size_t maxEntry = *nLHEScaleWeight+*nLHEPdfWeight;
-        if (doMC2H_ == true)
-            maxEntry += N_MC2HESSIAN_WEIGHTS_;
+    TRandom3 gauss;
+    float ptl_smear = lep.pt()*gauss.Gaus(1, 0.01);
 
-        for (size_t i = 0; i < maxEntry; i++) {
+    if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+        size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
+        if (doMC2H_ == true)
+            nWeights += N_MC2HESSIAN_WEIGHTS_;
+
+        for (size_t i = 0; i < nWeights; i++) {
             //float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
             //        : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
-            float thweight = i < *nLHEScaleWeight ? LHEScaleWeight[i] : LHEPdfWeight[i-*nLHEScaleWeight];
-            if (i > *nLHEScaleWeight && i < *nLHEScaleWeight+*nLHEPdfWeight)
-                mcPdfWeights_->Fill(thweight);
-            else if (i > *nLHEScaleWeight+*nLHEPdfWeight)
-                hesPdfWeights_->Fill(thweight);
+            float thweight = 1;
+            if (i < *nLHEScaleWeight)
+                thweight = LHEScaleWeight[i];
+            else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
+                thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
             else 
-                scaleWeights_->Fill(thweight);
-
+                thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
             if (centralWeightIndex_ != -1)
                 thweight /= LHEScaleWeight.At(centralWeightIndex_);
 
@@ -240,10 +243,12 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             SafeHistFill(weighthistMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear, i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
             SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, thweight);
+            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_smear_2D", toAppend), channel_, variation.first, lep.eta(), ptl_smear, i, thweight);
         }
     }
 
@@ -271,6 +276,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     SafeHistFill(histMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), weight);
     SafeHistFill(histMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), weight);
+    SafeHistFill(histMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear, weight);
     SafeHistFill(histMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), weight);
     SafeHistFill(histMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("ptnu", toAppend), channel_, variation.first, nu.pt(), weight);

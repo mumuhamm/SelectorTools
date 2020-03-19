@@ -25,9 +25,11 @@ parser.add_argument("-b", "--fitvar", type=str, default="ptWmet",
 parser.add_argument("-f", "--input_file", type=str, required=True,
     help="Input hist file")
 parser.add_argument("-l", "--lumi", type=float, 
-    default=0.2, help="lumi")
+    default=35.9*0.7, help="lumi")
 parser.add_argument("--noPdf", action='store_true', 
     help="don't add PDF uncertainties")
+parser.add_argument("--noPtVSplit", action='store_true', 
+    help="Don't split scale uncertainties by pt(V)")
 parser.add_argument("-r", "--rebin", 
                     type=str, default=None, help="Rebin array: "
                     "values (bin edges) separated by commas.")
@@ -67,7 +69,7 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
-    cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 2))
+    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -90,7 +92,7 @@ for process in plot_groups:
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
         cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
-        if not args.noPdf:
+        if not args.noPdf and "update" not in "minnlo":
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
             # NNPDF31_nnlo_as_0118_CMSW1_hessian_100; LHAPDFID = 325700
@@ -118,10 +120,12 @@ for process in plot_groups:
         if not args.noPdf:
             cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
 
-    for pair in ptbinPairs:
-        varName = 'ptV%ito%i' % pair
-        varName = varName.replace("100", "Inf")
-        cardtool.addScaleBasedVar(process, varName) 
+    if not args.noPtVSplit:
+        for pair in ptbinPairs:
+            varName = 'ptV%ito%i' % pair
+            varName = varName.replace("100", "Inf")
+            cardtool.addScaleBasedVar(process, varName) 
+    cardtool.addPerBinVariation(process, "CMS_eff_m", 0.01, False)
 
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)

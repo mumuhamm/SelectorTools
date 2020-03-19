@@ -18,9 +18,9 @@ rate                            ${w_yield}
 ------------                                     
 mWShift100MeV   shapeNoConstraint 1
 lumi2016_13TeV          lnN     1.025            
-QCDscale_muR_wpmunu_minnlo_nnlopslike_photos   shape   1                
-QCDscale_muF_wpmunu_minnlo_nnlopslike_photos   shape   1                
-QCDscale_muRmuF_wpmunu_minnlo_nnlopslike_photos   shape   1                
+QCDscale_muR_${w_sample} shape   1                
+QCDscale_muF_${w_sample} shape   1                
+QCDscale_muRmuF_${w_sample}     shape   1                
 pdf1        shape   1                
 pdf2        shape   1                
 pdf3        shape   1                

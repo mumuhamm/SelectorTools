@@ -349,10 +349,10 @@ class SelectorDriver(object):
             sumweights_branch = "summedWeights"
             meta_tree_name = "metaInfo/metaInfo"
 
+        ROOT.gROOT.cd()
+        sumweights_hist = ROOT.gROOT.FindObject("sumweights")
         if sumWeightsType == "fromTree":
             meta_tree = rtfile.Get(meta_tree_name)
-            ROOT.gROOT.cd()
-            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
             tmplabel = sumweights_hist.GetName()+"_i"
             tmpweights_hist = sumweights_hist.Clone(tmplabel)
             draw_weight = sumweights_branch 
@@ -363,10 +363,9 @@ class SelectorDriver(object):
             meta_tree.Draw("%i>>%s" % (filenum, tmplabel), draw_weight)
             sumweights_hist.Add(tmpweights_hist)
         elif sumWeightsType == "fromHist":
-            ROOT.gROOT.cd()
-            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
             new_sumweights_hist = rtfile.Get("hGenWeights")
             if sumweights_hist and new_sumweights_hist:
                 sumweights_hist.Add(new_sumweights_hist)
                 sumweights_hist.SetDirectory(ROOT.gROOT)
                 ROOT.SetOwnership(sumweights_hist, False)
+        logging.debug("Sumweights is %0.2f" % sumweights_hist.Integral())

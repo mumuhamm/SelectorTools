@@ -19,6 +19,7 @@ class CombineCardTools(object):
         self.templateName = ""
         self.channels = []
         self.variations = {}
+        self.perbinVariations = {}
         self.rebin = None
         self.isMC = True
         self.isUnrolledFit = False
@@ -94,6 +95,33 @@ class CombineCardTools(object):
             raise ValueError("Cannot define variation groups before scale is defined for process")
         self.theoryVariations[processName]['scale']['groups'] = groups
 
+    def addPerBinVariation(self, processName, varName, variation, correlate=True):
+        if processName not in self.perbinVariations:
+            self.perbinVariations[processName] = []
+        self.perbinVariations[processName].append((varName, variation, correlate))
+
+    def perBinVariationHists(self, hist, varName, var, correlation):
+        varUpRef = hist.Clone(hist.GetName().replace(self.fitVariable, '_'.join([self.fitVariable, varName+"Up"])))
+        map(lambda i: varUpRef.SetBinContent(i, 0), range(varUpRef.GetNbinsX()+1))
+        varDownRef = varUpRef.Clone(varUpRef.GetName().replace("Up", "Down"))
+
+        varHists = []
+        for i in range(hist.GetNbinsX()+1):
+            if not correlation:
+                varUp = varUpRef.Clone(varUpRef.GetName().replace(varName, varName+str(i)))
+                varDown = varDownRef.Clone(varDownRef.GetName().replace(varName, varName+str(i)))
+            else:
+                varUp = varUpRef
+                varDown = varDownRef
+
+            varUp.SetBinContent(i, (1.+var)*hist.GetBinContent(i))
+            varUp.SetBinError(i, (1.+var)*hist.GetBinError(i))
+            varDown.SetBinContent(i, 1/(1.+var)*hist.GetBinContent(i))
+            varDown.SetBinError(i, 1/(1.+var)*hist.GetBinError(i))
+            if i == 0 or not correlation:
+                varHists.extend([varUp, varDown])
+                
+        return varHists
 
     def addTheoryVar(self, processName, varName, entries, central=0, exclude=[], specName=""):
         if "scale" not in varName.lower() and "pdf" not in varName.lower():
@@ -235,6 +263,10 @@ class CombineCardTools(object):
             else:
                 self.yields["all"][processName] += self.yields[chan][processName]
 
+            if processName in self.perbinVariations:
+                for varName, var, corr in self.perbinVariations[processName]:
+                    map(lambda x: group.Add(x), self.perBinVariationHists(hist, varName, var, corr))
+
             scaleHists = []
             if processName in self.theoryVariations:
                 theoryVars = self.theoryVariations[processName]
@@ -250,6 +282,7 @@ class CombineCardTools(object):
 
                 pdfHists = []
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
+                weightHist = group.FindObject(self.weightHistName(chan, processName))
                 for var in pdfVars: 
                     pdfVar = theoryVars[var]
                     pdfType = "MC"
@@ -359,4 +392,5 @@ class CombineCardTools(object):
             "/".join([self.outputFolder, outputCard]),
             chan_dict
         )
+        print chan_dict
 

@@ -27,9 +27,6 @@ public :
     float mTmet;
     float cenWeight;
     
-    TTreeReaderValue<UInt_t> nLHEPdfWeight = {fReader, "nLHEPdfWeight"};
-    TTreeReaderArray<Float_t> LHEPdfWeight = {fReader, "LHEPdfWeight"};
-
     float MW_GEN_;
     float GAMMAW_GEN_;
     
