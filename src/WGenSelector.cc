@@ -14,8 +14,9 @@ void WGenSelector::Init(TTree *tree)
         "ptj1", "ptj2", "etaj1", "etaj2", "nJets",
         "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
         "ptgmax_assoc", "ptgmax_assoc",
+        "ptl_smear",
     };
-    hists2D_ = {"etal_ptl_2D"};
+    hists2D_ = {"etal_ptl_2D", "etal_ptl_smear_2D"};
     doSystematics_ = true;
     systematics_ = {
         {mWShift100MeVUp, "mWShift100MeVUp"},
@@ -37,7 +38,7 @@ void WGenSelector::Init(TTree *tree)
     systHists_ = hists1D_;
     systHists2D_ = hists2D_;
 
-    weighthists1D_ = {"CutFlow", "yW", "ptW", "ptl", "etal", "ptnu", "etanu", };
+    weighthists1D_ = {"CutFlow", "yW", "ptW", "ptl", "ptl_smear", "etal", "ptnu", "etanu", };
     weighthists2D_ = hists2D_;
 
     refWeight = 1;
@@ -64,19 +65,28 @@ void WGenSelector::Init(TTree *tree)
 
 void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
+
+    if (leptons.size() >= nLeptons_) {
+        auto& l = leptons.at(0);
+        if (variation.first == Central) {
+            TRandom3 gauss;
+            ptl_smear = l.pt()*gauss.Gaus(1, 0.01);
+        }
+        else if (variation.first == muonScaleUp) {
+            leptons.at(0).setP4(makeGenParticle(l.pdgId(), l.status(), l.pt()*1.001, l.eta(), l.phi(), l.mass()).polarP4());
+            SetComposite();
+        }
+        else if (variation.first == muonScaleDown) {
+            leptons.at(0).setP4(makeGenParticle(l.pdgId(), l.status(), l.pt()*1./1.001, l.eta(), l.phi(), l.mass()).polarP4());
+            SetComposite();
+        }
+    }
+
     if (variation.first == Central)
         cenWeight = weight;
-    else if (variation.first == LHEParticles)
+    else if (variation.first == LHEParticles) {
+        ptVlhe = wCand.pt();
         mWlhe = wCand.mass()*1000.;
-    else if (variation.first == muonScaleUp && leptons.size() >= nLeptons_) {
-        auto& l = leptons.at(0);
-        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*1.001, l.eta(), l.phi(), l.mass());
-        SetComposite();
-    }
-    else if (variation.first == muonScaleDown && leptons.size() >= nLeptons_) {
-        auto& l = leptons.at(0);
-        leptons[0] = makeGenParticle(l.pdgId(), l.status(), l.pt()*0.999, l.eta(), l.phi(), l.mass());
-        SetComposite();
     }
     else if (variation.first == mWShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
@@ -98,10 +108,6 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         weight = cenWeight*breitWignerWeight(100.);
     else if (variation.first == mWShift100MeVDown)
         weight = cenWeight*breitWignerWeight(-100.);
-
-    if (variation.first == LHEParticles) {
-        ptVlhe = wCand.pt();
-    }
 
     if (leptons.size() > 0 && std::abs(leptons.at(0).pdgId()) == 11) {
         if (leptons.at(0).pdgId() > 0) {
@@ -199,8 +205,11 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     if (doFiducial_ && lep.pt() < 25)
         return;
 
-    TRandom3 gauss;
-    float ptl_smear = lep.pt()*gauss.Gaus(1, 0.01);
+    float ptl_smear_fill = ptl_smear;
+    if (variation.first == muonScaleUp)
+        ptl_smear_fill *= 1.001;
+    else if (variation.first == muonScaleDown)
+        ptl_smear_fill *= 0.999;
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
@@ -243,12 +252,12 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             SafeHistFill(weighthistMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear, i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear_fill, i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), i, thweight);
             SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), i, thweight);
-            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_smear_2D", toAppend), channel_, variation.first, lep.eta(), ptl_smear, i, thweight);
+            SafeHistFill(weighthistMap2D_, concatenateNames("etal_ptl_smear_2D", toAppend), channel_, variation.first, lep.eta(), ptl_smear_fill, i, thweight);
         }
     }
 
@@ -276,7 +285,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     SafeHistFill(histMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), weight);
     SafeHistFill(histMap1D_, concatenateNames("MET_phi", toAppend), channel_, variation.first, genMet.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("ptl", toAppend), channel_, variation.first, lep.pt(), weight);
-    SafeHistFill(histMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear, weight);
+    SafeHistFill(histMap1D_, concatenateNames("ptl_smear", toAppend), channel_, variation.first, ptl_smear_fill, weight);
     SafeHistFill(histMap1D_, concatenateNames("etal", toAppend), channel_, variation.first, lep.eta(), weight);
     SafeHistFill(histMap1D_, concatenateNames("phil", toAppend), channel_, variation.first, lep.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("ptnu", toAppend), channel_, variation.first, nu.pt(), weight);
@@ -284,6 +293,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     SafeHistFill(histMap1D_, concatenateNames("phinu", toAppend), channel_, variation.first, nu.phi(), weight);
     SafeHistFill(histMap1D_, concatenateNames("nJets", toAppend), channel_, variation.first, jets.size(), weight);
     SafeHistFill(histMap2D_, concatenateNames("etal_ptl_2D", toAppend), channel_, variation.first, lep.eta(), lep.pt(), weight);
+    SafeHistFill(histMap2D_, concatenateNames("etal_ptl_smear_2D", toAppend), channel_, variation.first, lep.eta(), ptl_smear_fill, weight);
     for (size_t i = 1; i <= 3; i++) {
         if (jets.size() >= i ) {
             const auto& jet = jets.at(i-1);

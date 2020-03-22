@@ -23,6 +23,7 @@ class CombineCardTools(object):
         self.rebin = None
         self.isMC = True
         self.isUnrolledFit = False
+        self.removeZeros = True
         self.lumi = 1
         self.outputFolder = "."
         self.channelsToCombine = {}
@@ -33,6 +34,9 @@ class CombineCardTools(object):
 
     def setRebin(self, rebin):
         self.rebin = rebin
+
+    def setRemoveZeros(self, removeZeros):
+        self.removeZeros = removeZeros
 
     def setUnrolled(self, binsx, binsy):
         self.isUnrolledFit = True
@@ -102,7 +106,6 @@ class CombineCardTools(object):
 
     def perBinVariationHists(self, hist, varName, var, correlation):
         varUpRef = hist.Clone(hist.GetName().replace(self.fitVariable, '_'.join([self.fitVariable, varName+"Up"])))
-        map(lambda i: varUpRef.SetBinContent(i, 0), range(varUpRef.GetNbinsX()+1))
         varDownRef = varUpRef.Clone(varUpRef.GetName().replace("Up", "Down"))
 
         varHists = []
@@ -251,8 +254,7 @@ class CombineCardTools(object):
             if not hist:
                 logging.warning("Failed to produce hist %s for process %s" % (histName, processName))
                 continue
-            #TODO: Make optional
-            if "data" not in processName.lower():
+            if self.removeZeros and "data" not in processName.lower():
                 HistTools.removeZeros(hist)
             HistTools.addOverflow(hist)
             processedHists.append(histName)
@@ -272,13 +274,12 @@ class CombineCardTools(object):
                 theoryVars = self.theoryVariations[processName]
                 try:
                     scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory))
+                    if 'theoryBasedVars' in theoryVars['scale']:
+                        for theoryBasedVar in theoryVars['scale']['theoryBasedVars']:
+                            scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory, theoryBasedVar))
                 except ValueError as e:
                     logging.warning(e)
                     continue
-
-                if 'theoryBasedVars' in theoryVars['scale']:
-                    for theoryBasedVar in theoryVars['scale']['theoryBasedVars']:
-                        scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory, theoryBasedVar))
 
                 pdfHists = []
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
@@ -321,7 +322,7 @@ class CombineCardTools(object):
 
         #TODO: Make optional
         map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
-        if "data" not in group.GetName().lower():
+        if self.removeZeros and "data" not in group.GetName().lower():
             map(HistTools.removeZeros, filter(lambda x: (x.GetName() not in processedHists), group))
         #TODO: You may want to combine channels before removing zeros
         self.combineChannels(group, processName)

@@ -69,7 +69,7 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
-    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
+    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 2))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -83,6 +83,7 @@ cardtool.setOutputFile("WGenCombineInput.root")
 #cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
 #cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
 cardtool.setCombineChannels({"m" : ["mp"]})
+cardtool.setRemoveZeros(False)
 
 ptbins = [0,3,5,7,9,12,15,20,27,40,100]
 ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]

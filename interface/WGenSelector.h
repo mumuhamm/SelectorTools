@@ -27,6 +27,7 @@ public :
     float mTmet;
     float cenWeight;
     
+    float ptl_smear;
     float MW_GEN_;
     float GAMMAW_GEN_;
     
