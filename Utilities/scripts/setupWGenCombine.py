@@ -69,7 +69,8 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
-    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 2))
+    #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 1))
+    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -82,8 +83,9 @@ cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("WGenCombineInput.root")
 #cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
 #cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
-cardtool.setCombineChannels({"m" : ["mp"]})
+#cardtool.setCombineChannels({"m" : ["mp"]})
 cardtool.setRemoveZeros(False)
+cardtool.setAddOverflow(False)
 
 ptbins = [0,3,5,7,9,12,15,20,27,40,100]
 ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
@@ -96,7 +98,6 @@ for process in plot_groups:
         if not args.noPdf and "update" not in "minnlo":
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
-            # NNPDF31_nnlo_as_0118_CMSW1_hessian_100; LHAPDFID = 325700
             cardtool.addTheoryVar(process, 'pdf_hessian', range(121, 222), central=0, specName="CMSW1")
             # NNPDF31_nnlo_as_0118_CMSW2_hessian_100; LHAPDFID = 325900
             cardtool.addTheoryVar(process, 'pdf_hessian', range(222, 323), central=0, specName="CMSW2")
@@ -131,8 +132,8 @@ for process in plot_groups:
     cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 
-nuissance_map = {"e" : 105, "m" : 105 }
-for chan in ["m"]:#["e", "m"]:
+nuissance_map = {"mn" : 105, "mp" : 273, "m" : 273 }
+for chan in ["mp"]:
     cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
     logging.info("Writting cards for channel %s" % chan)
     cardtool.writeCards(chan, nuissance_map[chan], 

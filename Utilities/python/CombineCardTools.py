@@ -35,6 +35,9 @@ class CombineCardTools(object):
     def setRebin(self, rebin):
         self.rebin = rebin
 
+    def setAddOverflow(self, overflow):
+        self.addOverflow = overflow
+
     def setRemoveZeros(self, removeZeros):
         self.removeZeros = removeZeros
 
@@ -256,7 +259,8 @@ class CombineCardTools(object):
                 continue
             if self.removeZeros and "data" not in processName.lower():
                 HistTools.removeZeros(hist)
-            HistTools.addOverflow(hist)
+            if self.addOverflow:
+                HistTools.addOverflow(hist)
             processedHists.append(histName)
             self.yields[chan].update({processName : round(hist.Integral(), 3) if hist.Integral() > 0 else 0.0001})
 
@@ -295,8 +299,8 @@ class CombineCardTools(object):
                     if self.isUnrolledFit:
                         pdfFunction = pdfFunction.replace("get", "getTransformed3D")
                         args = args[0:1] + [HistTools.makeUnrolledHist, [self.unrolledBinsX, self.unrolledBinsY]] + args[1:]
-
-                    pdfHists += getattr(HistTools, pdfFunction)(*args)
+                    updatePdfs = getattr(HistTools, pdfFunction)(*args)
+                    pdfHists += updatePdfs
 
                     if expandedTheory and pdfVar['name'] == 'NNPDF31':
                         args.pop(len(args)-1)
@@ -317,15 +321,17 @@ class CombineCardTools(object):
                     theoryVarLabels = []
                     for h in group:
                         fitvar = self.getFitVariable(processName)
-                        theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*)", chan]), h.GetName()))
+                        theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*pdf.*)", chan]), h.GetName()))
+                        theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*QCDscale.*)", chan]), h.GetName()))
                     self.variations[processName].extend(set(theoryVarLabels))
 
-        #TODO: Make optional
-        map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
+        if self.addOverflow:
+            map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
         if self.removeZeros and "data" not in group.GetName().lower():
             map(HistTools.removeZeros, filter(lambda x: (x.GetName() not in processedHists), group))
         #TODO: You may want to combine channels before removing zeros
-        self.combineChannels(group, processName)
+        if self.channelsToCombine.keys():
+            self.combineChannels(group, processName)
 
         self.histData[processName] = group
 

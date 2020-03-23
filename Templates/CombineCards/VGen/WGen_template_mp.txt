@@ -1,0 +1,157 @@
+imax 1  number of channels
+jmax 0  number of processes - 1
+kmax ${nuisances} number of nuisance parameters (sources of systematical uncertainties)
+------------
+
+shapes ${w_sample} * ${output_file} ${w_sample}/${fit_variable}_$$CHANNEL ${w_sample}/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
+shapes nonprompt * ${output_file} nonprompt/${fit_variable}_$$CHANNEL  nonprompt/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
+shapes data_obs * ${output_file} ${data_name}/${fit_variable}_$$CHANNEL 
+
+bin           m
+observation   -1
+
+------------
+bin                             m                
+process                         ${w_sample}     
+process                         1               
+rate                            ${w_yield}    
+------------                                     
+mWShift100MeV   shapeNoConstraint 1
+lumi2016_13TeV          lnN     1.025            
+CMS_scale_m             shape   1
+ptV0to3_QCDscale_muR_${w_sample}       shape   1                
+ptV3to5_QCDscale_muF_${w_sample}       shape   1                
+ptV5to7_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV7to9_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV9to12_QCDscale_muRmuF_${w_sample}   shape   1                
+ptV12to15_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV15to20_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV20to27_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV27to40_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV40toInf_QCDscale_muRmuF_${w_sample} shape   1                
+ptV0to3_QCDscale_muR_${w_sample}       shape   1                
+ptV3to5_QCDscale_muF_${w_sample}       shape   1                
+ptV5to7_QCDscale_muR_${w_sample}       shape   1                
+ptV7to9_QCDscale_muR_${w_sample}       shape   1                
+ptV9to12_QCDscale_muR_${w_sample}      shape   1                
+ptV12to15_QCDscale_muR_${w_sample}     shape   1                
+ptV15to20_QCDscale_muR_${w_sample}     shape   1                
+ptV20to27_QCDscale_muR_${w_sample}     shape   1                
+ptV27to40_QCDscale_muR_${w_sample}     shape   1                
+ptV40toInf_QCDscale_muR_${w_sample}    shape   1                
+ptV0to3_QCDscale_muR_${w_sample}       shape   1                
+ptV3to5_QCDscale_muF_${w_sample}       shape   1                
+ptV5to7_QCDscale_muF_${w_sample}       shape   1                
+ptV7to9_QCDscale_muF_${w_sample}       shape   1                
+ptV9to12_QCDscale_muF_${w_sample}      shape   1                
+ptV12to15_QCDscale_muF_${w_sample}     shape   1                
+ptV15to20_QCDscale_muF_${w_sample}     shape   1                
+ptV20to27_QCDscale_muF_${w_sample}     shape   1                
+ptV27to40_QCDscale_muF_${w_sample}     shape   1                
+ptV40toInf_QCDscale_muF_${w_sample}    shape   1                
+pdf1        shape   1                
+pdf2        shape   1                
+pdf3        shape   1                
+pdf4        shape   1                
+pdf5        shape   1                
+pdf6        shape   1                
+pdf7        shape   1                
+pdf8        shape   1                
+pdf9        shape   1                
+pdf10       shape   1                
+pdf11       shape   1                
+pdf12       shape   1                
+pdf13       shape   1                
+pdf14       shape   1                
+pdf15       shape   1                
+pdf16       shape   1                
+pdf17       shape   1                
+pdf18       shape   1                
+pdf19       shape   1                
+pdf20       shape   1                
+pdf21       shape   1                
+pdf22       shape   1                
+pdf23       shape   1                
+pdf24       shape   1                
+pdf25       shape   1                
+pdf26       shape   1                
+pdf27       shape   1                
+pdf28       shape   1                
+pdf29       shape   1                
+pdf30       shape   1                
+pdf31       shape   1                
+pdf32       shape   1                
+pdf33       shape   1                
+pdf34       shape   1                
+pdf35       shape   1                
+pdf36       shape   1                
+pdf37       shape   1                
+pdf38       shape   1                
+pdf39       shape   1                
+pdf40       shape   1                
+pdf41       shape   1                
+pdf42       shape   1                
+pdf43       shape   1                
+pdf44       shape   1                
+pdf45       shape   1                
+pdf46       shape   1                
+pdf47       shape   1                
+pdf48       shape   1                
+pdf49       shape   1                
+pdf50       shape   1                
+pdf51       shape   1                
+pdf52       shape   1                
+pdf53       shape   1                
+pdf54       shape   1                
+pdf55       shape   1                
+pdf56       shape   1                
+pdf57       shape   1                
+pdf58       shape   1                
+pdf59       shape   1                
+pdf60       shape   1                
+pdf61       shape   1                
+pdf62       shape   1                
+pdf63       shape   1                
+pdf64       shape   1                
+pdf65       shape   1                
+pdf66       shape   1                
+pdf67       shape   1                
+pdf68       shape   1                
+pdf69       shape   1                
+pdf70       shape   1                
+pdf71       shape   1                
+pdf72       shape   1                
+pdf73       shape   1                
+pdf74       shape   1                
+pdf75       shape   1                
+pdf76       shape   1                
+pdf77       shape   1                
+pdf78       shape   1                
+pdf79       shape   1                
+pdf80       shape   1                
+pdf81       shape   1                
+pdf82       shape   1                
+pdf83       shape   1                
+pdf84       shape   1                
+pdf85       shape   1                
+pdf86       shape   1                
+pdf87       shape   1                
+pdf88       shape   1                
+pdf89       shape   1                
+pdf90       shape   1                
+pdf91       shape   1                
+pdf92       shape   1                
+pdf93       shape   1                
+pdf94       shape   1                
+pdf95       shape   1                
+pdf96       shape   1                
+pdf97       shape   1                
+pdf98       shape   1                
+pdf99       shape   1                
+pdf100      shape   1                
+
+#QCDscale_muR_${w_sample} shape   1                
+#QCDscale_muF_${w_sample} shape   1                
+#QCDscale_muRmuF_${w_sample}     shape   1                
+
+

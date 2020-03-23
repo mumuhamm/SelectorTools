@@ -236,7 +236,7 @@ def getAssymHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0
 
 def getTransformed3DAssymHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName=""):
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
-    hist_name = hist3D.GetName().replace("2D_lheWeights", "unrolled")
+    hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf%sHesUp" % pdfName]))
     return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
 
 def getPDFPercentVariation(values):
@@ -311,17 +311,17 @@ def isValidVariation(process_name, histCentral, histUp, histDown):
                 "bin: %i\n" 
                 % (process_name, histUp.GetName(), histUp.GetBinContent(i), histDown.GetBinContent(i), histCentral.GetBinContent(i), i)
             )
-def getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
+def getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
     hists = []
     entries = filter(lambda x: x not in exclude, entries)
     for i in entries:
-        scale_hist3D.GetZaxis().SetRange(i,i)
+        hist3D.GetZaxis().SetRange(i,i)
         # Order yx matters to have consistent axes!
-        scale_hist2D = scale_hist3D.Project3D("yxe")
-        scale_hist_name = scale_hist3D.GetName().replace("lheWeights", name+"_weight%i" % i)
-        scale_hist2D.SetName(scale_hist_name)
-        scale_hist1D = transformation(scale_hist2D, *transform_args)
-        hists.append(scale_hist1D)
+        hist2D = hist3D.Project3D("yxe")
+        hist_name = hist3D.GetName().replace("lheWeights", name+"_weight%i" % i)
+        hist2D.SetName(hist_name)
+        hist1D = transformation(hist2D, *transform_args)
+        hists.append(hist1D)
     return hists
 
 def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
