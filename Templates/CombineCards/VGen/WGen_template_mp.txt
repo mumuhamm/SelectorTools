@@ -7,11 +7,11 @@ shapes ${w_sample} * ${output_file} ${w_sample}/${fit_variable}_$$CHANNEL ${w_sa
 shapes nonprompt * ${output_file} nonprompt/${fit_variable}_$$CHANNEL  nonprompt/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
 shapes data_obs * ${output_file} ${data_name}/${fit_variable}_$$CHANNEL 
 
-bin           m
+bin           mp
 observation   -1
 
 ------------
-bin                             m                
+bin                             mp                
 process                         ${w_sample}     
 process                         1               
 rate                            ${w_yield}    
@@ -20,17 +20,7 @@ mWShift100MeV   shapeNoConstraint 1
 lumi2016_13TeV          lnN     1.025            
 CMS_scale_m             shape   1
 ptV0to3_QCDscale_muR_${w_sample}       shape   1                
-ptV3to5_QCDscale_muF_${w_sample}       shape   1                
-ptV5to7_QCDscale_muRmuF_${w_sample}    shape   1                
-ptV7to9_QCDscale_muRmuF_${w_sample}    shape   1                
-ptV9to12_QCDscale_muRmuF_${w_sample}   shape   1                
-ptV12to15_QCDscale_muRmuF_${w_sample}  shape   1                
-ptV15to20_QCDscale_muRmuF_${w_sample}  shape   1                
-ptV20to27_QCDscale_muRmuF_${w_sample}  shape   1                
-ptV27to40_QCDscale_muRmuF_${w_sample}  shape   1                
-ptV40toInf_QCDscale_muRmuF_${w_sample} shape   1                
-ptV0to3_QCDscale_muR_${w_sample}       shape   1                
-ptV3to5_QCDscale_muF_${w_sample}       shape   1                
+ptV3to5_QCDscale_muR_${w_sample}       shape   1                
 ptV5to7_QCDscale_muR_${w_sample}       shape   1                
 ptV7to9_QCDscale_muR_${w_sample}       shape   1                
 ptV9to12_QCDscale_muR_${w_sample}      shape   1                
@@ -39,7 +29,7 @@ ptV15to20_QCDscale_muR_${w_sample}     shape   1
 ptV20to27_QCDscale_muR_${w_sample}     shape   1                
 ptV27to40_QCDscale_muR_${w_sample}     shape   1                
 ptV40toInf_QCDscale_muR_${w_sample}    shape   1                
-ptV0to3_QCDscale_muR_${w_sample}       shape   1                
+ptV0to3_QCDscale_muF_${w_sample}       shape   1                
 ptV3to5_QCDscale_muF_${w_sample}       shape   1                
 ptV5to7_QCDscale_muF_${w_sample}       shape   1                
 ptV7to9_QCDscale_muF_${w_sample}       shape   1                
@@ -49,6 +39,16 @@ ptV15to20_QCDscale_muF_${w_sample}     shape   1
 ptV20to27_QCDscale_muF_${w_sample}     shape   1                
 ptV27to40_QCDscale_muF_${w_sample}     shape   1                
 ptV40toInf_QCDscale_muF_${w_sample}    shape   1                
+ptV0to3_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV3to5_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV5to7_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV7to9_QCDscale_muRmuF_${w_sample}    shape   1                
+ptV9to12_QCDscale_muRmuF_${w_sample}   shape   1                
+ptV12to15_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV15to20_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV20to27_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV27to40_QCDscale_muRmuF_${w_sample}  shape   1                
+ptV40toInf_QCDscale_muRmuF_${w_sample} shape   1                
 pdf1        shape   1                
 pdf2        shape   1                
 pdf3        shape   1                
@@ -149,9 +149,9 @@ pdf97       shape   1
 pdf98       shape   1                
 pdf99       shape   1                
 pdf100      shape   1                
-
 #QCDscale_muR_${w_sample} shape   1                
 #QCDscale_muF_${w_sample} shape   1                
 #QCDscale_muRmuF_${w_sample}     shape   1                
+${card_append}
 
 

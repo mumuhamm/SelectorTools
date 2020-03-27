@@ -115,7 +115,8 @@ def writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist
         "analysis" : analysis,
         "selection" : selection,
         "input_tier" : input_tier,
-        "queue" : ('+JobFlavour = "%s"' % queue) if queue != 'uw' else getUWCondorSettings(),
+        "queue" : ('+JobFlavour = "%s"\n+AccountingGroup = "group_u_CMST3.all"' % queue) \
+                if queue != 'uw' else getUWCondorSettings(),
         "filelist" : filelist.split(".txt")[0],
         "nPerJob" : nPerJob,
         "nJobs" : int(math.ceil(numfiles/nPerJob)),

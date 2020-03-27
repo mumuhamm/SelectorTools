@@ -55,8 +55,9 @@ plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plo
 
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
 
-#channels = ["ep", "en", "mp", "mn"]
-channels = ["mp", "mn"]
+#channels = ["mp", "mn"]
+#channels = ["mp", "mn"]
+channels = ["mn"]
 if args.rebin:
     if ":" in args.rebin:
         bins = UserInput.getRebin(args.rebin)
@@ -69,8 +70,10 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
+    #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 2))
+    cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(25, 105, 5))
     #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 1))
-    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
+    #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
 cardtool.setCrosSectionMap(xsecs)
@@ -127,13 +130,14 @@ for process in plot_groups:
             varName = 'ptV%ito%i' % pair
             varName = varName.replace("100", "Inf")
             cardtool.addScaleBasedVar(process, varName) 
-    cardtool.addPerBinVariation(process, "CMS_eff_m", 0.01, False)
+    if process == args.central:
+        cardtool.addPerBinVariation(process, "CMS_eff_m", 0.01, False)
 
-    cardtool.loadHistsForProcess(process, expandedTheory=True)
+    cardtool.loadHistsForProcess(process, expandedTheory=False)
     cardtool.writeProcessHistsToOutput(process)
 
-nuissance_map = {"mn" : 105, "mp" : 273, "m" : 273 }
-for chan in ["mp"]:
+nuissance_map = {"mn" : 273, "mp" : 273, "m" : 273 }
+for chan in channels:
     cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
     logging.info("Writting cards for channel %s" % chan)
     cardtool.writeCards(chan, nuissance_map[chan], 

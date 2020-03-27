@@ -269,6 +269,7 @@ def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=range(1,10), p
 
 def getVariationHists(hists, process_name, histUp_name, up_action, down_action, central=0):
     histUp = hists[0].Clone(histUp_name)
+    histUp.Reset()
     histDown = histUp.Clone(histUp_name.replace("Up", "Down"))
     
     histCentral = hists.pop(central).Clone() if central != -1 else None
@@ -283,8 +284,7 @@ def getVariationHists(hists, process_name, histUp_name, up_action, down_action, 
         vals.insert(0, histCentral.GetBinContent(i) if histCentral else 0)
         histUp.SetBinContent(i, up_action(vals))
         histDown.SetBinContent(i, down_action(vals))
-        # For now, skip this check on aQGC for now, since they're screwed up
-        if "aqgc" in process_name: continue
+
     logging.debug("For process %s, hist %s: Central, down, up: %s, %s, %s" % \
             (process_name, histUp_name, histCentral.Integral() if histCentral else 0, histDown.Integral(), histUp.Integral()))
     if histCentral and False: # Off for now, it can happen that groups have some hists with no weights which screws this up
