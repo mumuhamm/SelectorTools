@@ -73,14 +73,24 @@ public :
     Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
     UInt_t nLHEScaleWeightAltSet1 = 0;
     Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
+    UInt_t nLHEUnknownWeight = 0;
+    Float_t LHEUnknownWeight[100];
+    UInt_t nLHEUnknownWeightAltSet1 = 0;
+    Float_t LHEUnknownWeightAltSet1[100];
 
     TBranch* b_nLHEPdfWeight;
     TBranch* b_LHEPdfWeight;
     TBranch* b_nLHEScaleWeightAltSet1;
     TBranch* b_LHEScaleWeightAltSet1;
+    TBranch* b_nLHEUnknownWeight;
+    TBranch* b_LHEUnknownWeight;
+    TBranch* b_nLHEUnknownWeightAltSet1;
+    TBranch* b_LHEUnknownWeightAltSet1;
 
     bool altScaleWeights_ = false;
     bool pdfWeights_ = false;
+    bool unknownWeights_ = false;
+    bool unknownWeightsAlt_ = false;
 
     TTreeReaderValue<UInt_t> nGenDressedLepton = {fReader, "nGenDressedLepton"};
     TTreeReaderArray<Bool_t> GenDressedLepton_hasTauAnc = {fReader, "GenDressedLepton_hasTauAnc"};

@@ -13,6 +13,7 @@ void NanoGenSelectorBase::Init(TTree *tree)
     if (doTheoryVars_) {
         theoryVarSysts_.insert(theoryVarSysts_.begin(), Central);
         theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
+        theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
     }
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");
@@ -53,6 +54,8 @@ void NanoGenSelectorBase::Init(TTree *tree)
     }
     b.SetTree(tree);
     altScaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeightAltSet1") != nullptr);
+    unknownWeights_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeight") != nullptr);
+    unknownWeightsAlt_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeightAltSet1") != nullptr);
     pdfWeights_ = (tree->GetListOfBranches()->FindObject("nLHEPdfWeight") != nullptr);
 
     SelectorBase::Init(tree);
@@ -82,8 +85,10 @@ void NanoGenSelectorBase::Init(TTree *tree)
     doFiducial_ = selection_ != None;
     if (!doFiducial_)
         std::cout << "INFO: No fiducial selection will be applied\n";
-    doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
-    doBareLeptons_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
+    //doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
+    //doBareLeptons_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
+    doBorn_ = true;
+    doBareLeptons_ = true;
     fReader.SetTree(tree);
 }
 
@@ -95,6 +100,14 @@ void NanoGenSelectorBase::SetBranchesNanoAOD() {
     if (pdfWeights_) {
         b.SetSpecificBranch("nLHEPdfWeight", nLHEPdfWeight);
         b.SetSpecificBranch("LHEPdfWeight", LHEPdfWeight);
+    }
+    if (unknownWeights_) {
+        b.SetSpecificBranch("nLHEUnknownWeight", nLHEUnknownWeight);
+        b.SetSpecificBranch("LHEUnknownWeight", LHEUnknownWeight);
+        if (unknownWeightsAlt_) {
+            b.SetSpecificBranch("nLHEUnknownWeightAltSet1", nLHEUnknownWeightAltSet1);
+            b.SetSpecificBranch("LHEUnknownWeightAltSet1", LHEUnknownWeightAltSet1);
+        }
     }
 }
 
@@ -108,11 +121,23 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         b.SetSpecificEntry(entry, "LHEPdfWeight");
         b.SetSpecificEntry(entry, "nLHEPdfWeight");
     }
+    if (unknownWeights_) {
+        b.SetSpecificEntry(entry, "LHEUnknownWeight");
+        b.SetSpecificEntry(entry, "nLHEUnknownWeight");
+        if (unknownWeightsAlt_) {
+            b.SetSpecificEntry(entry, "LHEUnknownWeightAltSet1");
+            b.SetSpecificEntry(entry, "nLHEUnknownWeightAltSet1");
+        }
+    }
 
     if (!altScaleWeights_)
         nLHEScaleWeightAltSet1 = 0;
     if (!pdfWeights_)
         nLHEPdfWeight = 0;
+    if (!unknownWeights_)
+        nLHEUnknownWeight = 0;
+    if (!unknownWeightsAlt_)
+        nLHEUnknownWeightAltSet1 = 0;
     fReader.SetLocalEntry(entry);
 
     channel_ = channelMap_[channelName_];
@@ -147,7 +172,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
             for (size_t i = 0; i < *nGenPart; i++) {
                 bool isHardProcess = (GenPart_statusFlags.At(i) >> 7) & 1;
                 bool isPrompt = (GenPart_statusFlags.At(i) >> 0) & 1;
-                if ((doBorn_ && !isHardProcess) || GenPart_status.At(i) != 1)
+                if (!(isHardProcess || (GenPart_status.At(i) == 1 && isPrompt)))
                     continue;
                 if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(GenPart_pdgId.At(i))) == idsToKeep.end())
                     continue;
@@ -155,7 +180,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
                 auto part = makeGenParticle(GenPart_pdgId.At(i), GenPart_status.At(i), GenPart_pt.At(i), 
                         GenPart_eta.At(i), GenPart_phi.At(i), GenPart_mass.At(i));
                 if (std::abs(part.pdgId()) == 11 || std::abs(part.pdgId()) == 13) {
-                    if (doBareLeptons_ && GenPart_status.At(i) == 1)
+                    if (doBareLeptons_ && isPrompt && GenPart_status.At(i) == 1)
                         bareLeptons.emplace_back(part);
                     if (isHardProcess && doBorn_)
                         bornLeptons.emplace_back(part);
@@ -167,7 +192,6 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
                         bornNeutrinos.emplace_back(part);
                 }
                 else if (std::abs(part.pdgId()) == 22 && isPrompt) {
-                //else if (std::abs(part.pdgId()) == 22) {
                     photons.emplace_back(part);
                 }
             }
@@ -186,6 +210,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     }
     else if (variation.first == BareLeptons) {
         leptons = bareLeptons;
+        std::cout << "Size of bare leptons " << leptons.size() << std::endl; 
         neutrinos = fsneutrinos;
     }
     else if (variation.first == BornParticles) {

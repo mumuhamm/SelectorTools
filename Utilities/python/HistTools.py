@@ -140,8 +140,9 @@ def getLHEWeightHists(init2D_hist, entries, name, variation_name, rebin=None):
         hist = getWeightHistProjection(init2D_hist, name, i, rebin)
         hists.append(hist)
     hist_name = init2D_hist.GetName()
+    varlabel = ("%s_%sUp" % (variation_name, name)) if name != "" else variation_name+"Up"
     if "lheWeights" in hist_name:
-        hist_name = hist_name.replace("lheWeights", "%s_%sUp" % (variation_name, name))
+        hist_name = hist_name.replace("lheWeights", varlabel)
     else:
         hist_name = "_".join([hist_name, variation_name, name+"Up"])
     return hists, hist_name
@@ -327,13 +328,13 @@ def getAllTransformed3DHists(hist3D, transformation, transform_args, name, entri
 def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
     scale_hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude)
     hist_name = scale_hist3D.GetName().replace("2D", "unrolled")
-    hist_name = hist_name.replace("lheWeights", "_".join(["QCDscale", name+"Up"]))
+    hist_name = hist_name.replace("lheWeights", "QCDscale"+("_" if name != "" else "")+name+"Up")
     return getVariationHists(scale_hists, name, hist_name, lambda x: x[-1], lambda x: x[1])
 
 def getTransformed3DExpandedScaleHists(scale_hist3D, transformation, transform_args, name, entries, pairs=[(1,7), (3,5), (0,8)]):
     hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude=[])
     hist_name = scale_hist3D.GetName().replace("2D", "unrolled")
-    hist_name = hist_name.replace("lheWeights", "_".join(["QCDscale", name+"Up"]))
+    hist_name = hist_name.replace("lheWeights", "QCDscale"+("_" if name != "" else "")+name+"Up")
     return makeExpandedScaleHists(hists, hist_name, name, pairs)
 
 def getTransformed3DSymMCPDFVarHists(hist3D, transformation, transform_args, entries, name):

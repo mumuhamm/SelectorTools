@@ -56,8 +56,7 @@ plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plo
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
 
 #channels = ["mp", "mn"]
-#channels = ["mp", "mn"]
-channels = ["mn"]
+channels = ["mn", "mp"]
 if args.rebin:
     if ":" in args.rebin:
         bins = UserInput.getRebin(args.rebin)
@@ -70,9 +69,8 @@ if args.rebin:
 
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
-    #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 2))
-    cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(25, 105, 5))
     #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 1))
+    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 1))
     #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(channels)
@@ -86,7 +84,7 @@ cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("WGenCombineInput.root")
 #cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
 #cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
-#cardtool.setCombineChannels({"m" : ["mp"]})
+cardtool.setCombineChannels({"m" : ["mp", "mn"]})
 cardtool.setRemoveZeros(False)
 cardtool.setAddOverflow(False)
 
@@ -98,7 +96,7 @@ for process in plot_groups:
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
         cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
-        if not args.noPdf and "update" not in "minnlo":
+        if not args.noPdf and "update_minnlo" not in process:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
             cardtool.addTheoryVar(process, 'pdf_hessian', range(121, 222), central=0, specName="CMSW1")
@@ -130,19 +128,21 @@ for process in plot_groups:
             varName = 'ptV%ito%i' % pair
             varName = varName.replace("100", "Inf")
             cardtool.addScaleBasedVar(process, varName) 
-    if process == args.central:
+    if process in args.central.split(","):
         cardtool.addPerBinVariation(process, "CMS_eff_m", 0.01, False)
 
-    cardtool.loadHistsForProcess(process, expandedTheory=False)
+    cardtool.loadHistsForProcess(process, expandedTheory=True)
     cardtool.writeProcessHistsToOutput(process)
 
 nuissance_map = {"mn" : 273, "mp" : 273, "m" : 273 }
-for chan in channels:
+for i, chan in enumerate(channels):
+    data = args.data if "," not in args.data else args.data.split(",")[i]
+    central = args.central if "," not in args.central else args.data.split(",")[i]
     cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
     logging.info("Writting cards for channel %s" % chan)
     cardtool.writeCards(chan, nuissance_map[chan], 
-        extraArgs={"data_name" : args.data, 
-            "w_sample" : args.central, "w_yield" : "yield:%s" % args.central, 
+        extraArgs={"data_name" : data, 
+            "w_sample" : central, "w_yield" : "yield:%s" % central, 
         }
     )
 

@@ -17,6 +17,7 @@ class CombineCardTools(object):
         self.crossSectionMap = {}
         self.outputFile = ""
         self.templateName = ""
+        self.correlateScaleUnc = False
         self.channels = []
         self.variations = {}
         self.perbinVariations = {}
@@ -30,6 +31,7 @@ class CombineCardTools(object):
         self.theoryVariations = {}
         self.extraCardVars = ""
         self.cardGroups = ""
+        self.addOverflow = False
 
     def setPlotGroups(self, xsecMap):
         self.crossSectionMap = xsecMap
@@ -39,6 +41,9 @@ class CombineCardTools(object):
 
     def setAddOverflow(self, overflow):
         self.addOverflow = overflow
+
+    def setCorrelateScaleUnc(self, correlate):
+        self.correlateScaleUnc = correlate
 
     def setRemoveZeros(self, removeZeros):
         self.removeZeros = removeZeros
@@ -109,13 +114,13 @@ class CombineCardTools(object):
             self.perbinVariations[processName] = []
         self.perbinVariations[processName].append((varName, variation, correlate))
 
-    def perBinVariationHists(self, hist, varName, var, correlation):
+    def perBinVariationHists(self, hist, varName, var, correlation, addToCard=False):
         varUpRef = hist.Clone(hist.GetName().replace(self.fitVariable, '_'.join([self.fitVariable, varName+"Up"])))
         varDownRef = varUpRef.Clone(varUpRef.GetName().replace("Up", "Down"))
 
         varHists = []
         # TODO: this needs to be made more general
-        if correlation:
+        if correlation and addToCard:
             self.extraCardVars += "%s    shape   1\n" % varName
         for i in range(1, hist.GetNbinsX()+1):
             if not correlation:
@@ -275,9 +280,9 @@ class CombineCardTools(object):
             else:
                 self.yields["all"][processName] += self.yields[chan][processName]
 
-            if processName in self.perbinVariations and chan == self.channels[0]:
+            if processName in self.perbinVariations:
                 for varName, var, corr in self.perbinVariations[processName]:
-                    map(lambda x: group.Add(x), self.perBinVariationHists(hist, varName, var, corr))
+                    map(lambda x: group.Add(x), self.perBinVariationHists(hist, varName, var, corr, chan == self.channels[0]))
 
             scaleHists = []
             if processName in self.theoryVariations:
@@ -358,13 +363,14 @@ class CombineCardTools(object):
                 entries=scaleVars['entries'], 
                 exclude=scaleVars['exclude'])
         if expandedTheory:
-            expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 
+            name = processName if not self.correlateScaleUnc else ""
+            expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, name, self.rebin, 
                     entries=scaleVars['entries'], 
                     pairs=scaleVars['groups'], 
                 ) if not self.isUnrolledFit else \
                 HistTools.getTransformed3DExpandedScaleHists(weightHist, 
                         HistTools.makeUnrolledHist,
-                    [self.unrolledBinsX, self.unrolledBinsY], processName,
+                    [self.unrolledBinsX, self.unrolledBinsY], name,
                     entries=scaleVars['entries'], 
                     pairs=scaleVars['groups'], 
                 )

@@ -25,6 +25,10 @@ parser.add_argument("--noPdf", action='store_true',
     help="don't add PDF uncertainties")
 parser.add_argument("--files", type=lambda x: [i.strip() for i in x.split(",")], 
     default=[], help="Samples to add to output file")
+parser.add_argument("-l", "--lumi", type=float, 
+    default=35.9*0.85, help="lumi")
+parser.add_argument("--noPtVSplit", action='store_true', 
+    help="Don't split scale uncertainties by pt(V)")
 parser.add_argument("-r", "--rebin", 
                     type=str, default=None, help="Rebin array: "
                     "values (bin edges) separated by commas.")
@@ -73,9 +77,11 @@ cardtool.setVariations([])
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/ZGen/%s" % folder_name)
 
-cardtool.setLumi(35.9)
+cardtool.setLumi(args.lumi)
 cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("ZGenCombineInput.root")
+cardtool.setRemoveZeros(False)
+cardtool.setAddOverflow(False)
 
 ptbins = [0,3,5,7,9,12,15,20,27,40,100]
 ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
@@ -105,16 +111,21 @@ for process in plot_groups:
             cardtool.addTheoryVar(process, 'pdf_assymhessian', range(668, 711), central=0, specName="HERA2")
     elif "nnlops" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
+        cardtool.setScaleVarGroups(process, [(3,6), (1,2), (4,8)])
+        if not args.noPdf:
+            # NNPDF3.1
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(885, 986), central=0, specName="NNPDF31")
     elif process not in ["nonprompt", "data"]: #and False
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
         pdf_entries = [4] + (range(10, 40) if "cp5" in process else range(10, 110))
         #cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" in process else "pdf_hessian", pdf_entries, central=0)
         cardtool.addTheoryVar(process, 'pdf_hessian', pdf_entries, central=0)
 
-    for pair in ptbinPairs:
-        varName = 'ptV%ito%i' % pair
-        varName = varName.replace("100", "Inf")
-        cardtool.addScaleBasedVar(process, varName) 
+    if not args.noPtVSplit:
+        for pair in ptbinPairs:
+            varName = 'ptV%ito%i' % pair
+            varName = varName.replace("100", "Inf")
+            cardtool.addScaleBasedVar(process, varName) 
 
     cardtool.loadHistsForProcess(process)
     cardtool.writeProcessHistsToOutput(process)

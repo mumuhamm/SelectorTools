@@ -38,7 +38,7 @@ void WGenSelector::Init(TTree *tree)
     systHists_ = hists1D_;
     systHists2D_ = hists2D_;
 
-    weighthists1D_ = {"CutFlow", "yW", "ptW", "ptl", "ptl_smear", "etal", "ptnu", "etanu", };
+    weighthists1D_ = {"CutFlow", "mW", "mTmet", "yW", "ptW", "ptl", "ptl_smear", "etal", "ptnu", "etanu", };
     weighthists2D_ = hists2D_;
 
     refWeight = 1;
@@ -52,8 +52,8 @@ void WGenSelector::Init(TTree *tree)
         GAMMAW_GEN_ = 2088.720;
     }
     else if (name_.find("minnlo") != std::string::npos) {
-        MW_GEN_ = 80398.0;
-        GAMMAW_GEN_ = 2141.0;
+        MW_GEN_ = 80351.97159;
+        GAMMAW_GEN_ = 2084.29889;
     }
     else {
         MW_GEN_ = 80419.;
@@ -212,20 +212,22 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         ptl_smear_fill *= 0.999;
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
-        size_t nWeights = variation.first == Central ? *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEPdfWeight : *nLHEScaleWeight+nLHEScaleWeightAltSet1;
-        if (doMC2H_ == true)
-            nWeights += N_MC2HESSIAN_WEIGHTS_;
+        size_t minimalWeights = *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
+        size_t nWeights = variation.first == Central ? minimalWeights : minimalWeights+nLHEPdfWeight;
 
         for (size_t i = 0; i < nWeights; i++) {
-            //float thweight = (i < *nLHEScaleWeight) ? LHEScaleWeight[i] : ( i < (*nLHEPdfWeight+*nLHEScaleWeight) ? LHEPdfWeight[i-*nLHEScaleWeight] 
-            //        : LHEHessianPdfWeight[i-*nLHEScaleWeight-*nLHEPdfWeight]);
             float thweight = 1;
             if (i < *nLHEScaleWeight)
                 thweight = LHEScaleWeight[i];
             else if (i < *nLHEScaleWeight+nLHEScaleWeightAltSet1)
                 thweight = LHEScaleWeightAltSet1[i-*nLHEScaleWeight];
+            else if (i < minimalWeights-nLHEUnknownWeightAltSet1)
+                thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1];
+            else if (i < minimalWeights)
+                thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeightAltSet1];
             else 
-                thweight = LHEPdfWeight[i-*nLHEScaleWeight-nLHEScaleWeightAltSet1];
+                thweight = LHEPdfWeight[i-minimalWeights];
+
             if (centralWeightIndex_ != -1)
                 thweight /= LHEScaleWeight.At(centralWeightIndex_);
 
@@ -243,10 +245,10 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             }
 
             thweight *= weight;
-            SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.mass(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), i, thweight);
-            SafeHistFill(weighthistMap1D_, concatenateNames("mWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, concatenateNames("mWmet", toAppend), channel_, variation.first, wCandMet.mass(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("yWmet", toAppend), channel_, variation.first, wCandMet.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("ptWmet", toAppend), channel_, variation.first, wCandMet.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("MET", toAppend), channel_, variation.first, genMet.pt(), i, thweight);
