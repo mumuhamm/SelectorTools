@@ -24,12 +24,16 @@ parser.add_argument("-b", "--fitvar", type=str, default="ptWmet",
     help="Variable to use in the fit")
 parser.add_argument("-f", "--input_file", type=str, required=True,
     help="Input hist file")
+parser.add_argument("--channels", type=lambda x: x.split(), 
+    default=["mp","mn"], help="List of channels (separated by comma)")
 parser.add_argument("-l", "--lumi", type=float, 
     default=35.9*0.7, help="lumi")
 parser.add_argument("--noPdf", action='store_true', 
     help="don't add PDF uncertainties")
 parser.add_argument("--noPtVSplit", action='store_true', 
     help="Don't split scale uncertainties by pt(V)")
+parser.add_argument("--theoryOnly", action='store_true', 
+    help="Only add theory uncertainties")
 parser.add_argument("-r", "--rebin", 
                     type=str, default=None, help="Rebin array: "
                     "values (bin edges) separated by commas.")
@@ -55,8 +59,6 @@ plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plo
 
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
 
-#channels = ["mp", "mn"]
-channels = ["mn", "mp"]
 if args.rebin:
     if ":" in args.rebin:
         bins = UserInput.getRebin(args.rebin)
@@ -73,18 +75,22 @@ if "unrolled" in args.fitvar:
     cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 1))
     #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
-cardtool.setChannels(channels)
+cardtool.setChannels(args.channels)
 cardtool.setCrosSectionMap(xsecs)
-cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV", "CMS_scale_m"])
+
+if not args.theoryOnly:
+    cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV", "CMS_scale_m"])
+else:
+    cardtool.setVariations([])
+
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
 
 cardtool.setLumi(args.lumi)
 cardtool.setInputFile(args.input_file)
 cardtool.setOutputFile("WGenCombineInput.root")
-#cardtool.setCombineChannels({"all" : channels, "e" : ["ep", "en"], "m" : ["mp", "mn"]})
-#cardtool.setCombineChannels({"e" : ["ep", "en"], "m" : ["mp", "mn"]})
-cardtool.setCombineChannels({"m" : ["mp", "mn"]})
+if "mp" in args.channels and "mn" in args.channels:
+    cardtool.setCombineChannels({"m" : ["mp", "mn"]})
 cardtool.setRemoveZeros(False)
 cardtool.setAddOverflow(False)
 
@@ -135,7 +141,7 @@ for process in plot_groups:
     cardtool.writeProcessHistsToOutput(process)
 
 nuissance_map = {"mn" : 273, "mp" : 273, "m" : 273 }
-for i, chan in enumerate(channels):
+for i, chan in enumerate(args.channels):
     data = args.data if "," not in args.data else args.data.split(",")[i]
     central = args.central if "," not in args.central else args.data.split(",")[i]
     cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
