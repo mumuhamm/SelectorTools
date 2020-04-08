@@ -8,6 +8,7 @@ ShouldTransferFiles  = yes
 want_graceful_removal = True 
 request_memory       = 2000
 request_disk         = 2048000
+use_x509userproxy = True
 # stop jobs from running if they blow up in size or memory
 periodic_hold        = (DiskUsage/1024 > 10.0*2000 ||  ImageSize/1024 > RequestMemory*2)
 Analysis = ${analysis} 

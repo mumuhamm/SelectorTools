@@ -210,7 +210,6 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     }
     else if (variation.first == BareLeptons) {
         leptons = bareLeptons;
-        std::cout << "Size of bare leptons " << leptons.size() << std::endl; 
         neutrinos = fsneutrinos;
     }
     else if (variation.first == BornParticles) {

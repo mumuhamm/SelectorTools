@@ -12,6 +12,5 @@ pushd $$CMSSW_RELEASE_BASE
 eval `scramv1 runtime -sh`
 popd
 export LD_LIBRARY_PATH=$$PWD/lib:$$LD_LIBRARY_PATH
-export X509_USER_PROXY=userproxy
 ./Utilities/scripts/makeHistFile.py $$@ || exit $$?
 

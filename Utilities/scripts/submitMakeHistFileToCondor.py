@@ -83,8 +83,8 @@ def copyDatasetManagerFiles(analysis):
             for d in glob.glob(path+'*'):
                 shutil.copy(d, d.replace(manager_path+"/", ""))
 
+# TODO: Check if this is needed at UW. I think it isn't
 def copyGridCertificate():
-    # TODO: Check that it's valid for enough time
     proxypath = "/tmp/x509up_u%s" % os.getuid() if not \
                 ("X509_USER_PROXY" in os.environ and os.path.isfile(os.environ["X509_USER_PROXY"])) \
             else os.environ["X509_USER_PROXY"] 
@@ -97,10 +97,8 @@ def tarAnalysisInfo(condor_dir, tarball_name):
         tar.add("data")
         tar.add("lib")
         tar.add("AnalysisDatasetManager")
-        tar.add("userproxy")
     shutil.rmtree("lib")
     shutil.rmtree("AnalysisDatasetManager")
-    os.remove("userproxy")
 
 def getUWCondorSettings():
     return """# (wisconsin-specific) tell glideins to run job with access to cvmfs (via parrot)
@@ -147,7 +145,6 @@ def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tie
     makeSubmitDir(submit_dir, force)
     copyLibs()
     copyDatasetManagerFiles(analysis)
-    copyGridCertificate()
     modifyAFSPermissions()
 
     filelist_name = '_'.join(filenames[:max(len(filenames), 4)])
