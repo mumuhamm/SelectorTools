@@ -57,15 +57,13 @@ hist.Fit("gaus", "Q", "", 81.2, 101.2)
 cenPeak = getMass(hist)
 print "-"*80
 print "Peak for central 91.1876 (peak at 91.1535) is %0.4f" % cenPeak 
-print "-"*80
 
 hists,_ = HistTools.getLHEWeightHists(hist2D, range(1,100), "", "mZshift")
 
 for i,h in enumerate(hists[18:18+len(names)]):
     print "-"*80
     print "Results for weight %i for mass shift %0.4f" % (i, names[i])
-    print "    --> offset from central should be %0.4f" % (names[i] - 91.1876)
-    print "-"*80
+    print "    offset from central should be %0.4f" % (names[i] - 91.1876)
     h.Fit("gaus", "Q", "", 80, 100)
     mass = getMass(h)
-    print "Peak is at %0.4f offset from central is %0.4f" % (mass, mass - cenPeak)
+    print "--> fit peak is at %0.4f offset from central is %0.4f" % (mass, mass - cenPeak)

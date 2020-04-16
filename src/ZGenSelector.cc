@@ -8,7 +8,7 @@ void ZGenSelector::Init(TTree *tree)
     allChannels_ = {{ee, "ee"}, {mm, "mm"}};
     // Add CutFlow for Unknown to understand when channels aren't categorized
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
-    std::vector<std::string> basehists1D = {"CutFlow", "ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
+    std::vector<std::string> basehists1D = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
         "MET", "HT",};
     hists1D_ = basehists1D;
@@ -19,8 +19,8 @@ void ZGenSelector::Init(TTree *tree)
     //}
     systHists_ = hists1D_;
 
-    weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
-        "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
+    weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "ptl2", "etal2", 
+        "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "nJets",
         "MET", "HT", };
     nLeptons_ = 2;
 
@@ -29,7 +29,35 @@ void ZGenSelector::Init(TTree *tree)
         {BareLeptons, "barelep"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
+        {mZShift100MeVUp, "mZShift100MeVUp"},
+        {mZShift50MeVUp, "mZShift50MeVUp"},
+        {mZShift25MeVUp, "mZShift25MeVUp"},
+        {mZShift20MeVUp, "mZShift20MeVUp"},
+        {mZShift10MeVUp, "mZShift10MeVUp"},
+        {mZShift100MeVDown, "mZShift100MeVDown"},
+        {mZShift50MeVDown, "mZShift50MeVDown"},
+        {mZShift25MeVDown, "mZShift25MeVDown"},
+        {mZShift20MeVDown, "mZShift20MeVDown"},
+        {mZShift10MeVUp, "mZShift10MeVUp"},
     };
+
+    // Chose by MC sample
+    if (name_.find("nnlops") != std::string::npos) {
+        MV_GEN_ = 80398.0;
+        GAMMAV_GEN_ = 2088.720;
+    }
+    else if (name_.find("minnlo") != std::string::npos) {
+        MV_GEN_ = 91153.48061918276;
+        GAMMAV_GEN_ = 2494.2663787728243;
+
+        if (name_.find("mZup") != std::string::npos) {
+            MV_GEN_ = 91253.48061918276;
+        }
+    }
+    else {
+        MV_GEN_ = 80419.;
+        GAMMAV_GEN_ = 2050;
+    }
 
     NanoGenSelectorBase::Init(tree);
 }
@@ -37,9 +65,32 @@ void ZGenSelector::Init(TTree *tree)
 void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
 
-    if (variation.first == LHEParticles) {
+    if (variation.first == Central)
+        cenWeight = weight;
+    else if (variation.first == LHEParticles) {
         ptVlhe = zCand.pt();
+        mVlhe = zCand.mass()*1000.;
     }
+    else if (variation.first == mZShift10MeVUp)
+        weight = cenWeight*breitWignerWeight(10.);
+    else if (variation.first == mZShift10MeVDown)
+        weight = cenWeight*breitWignerWeight(-10.);
+    else if (variation.first == mZShift20MeVUp)
+        weight = cenWeight*breitWignerWeight(20.);
+    else if (variation.first == mZShift20MeVDown)
+        weight = cenWeight*breitWignerWeight(-20.);
+    else if (variation.first == mZShift25MeVUp)
+        weight = cenWeight*breitWignerWeight(25.);
+    else if (variation.first == mZShift25MeVDown)
+        weight = cenWeight*breitWignerWeight(-25.);
+    else if (variation.first == mZShift50MeVUp)
+        weight = cenWeight*breitWignerWeight(50.);
+    else if (variation.first == mZShift50MeVDown)
+        weight = cenWeight*breitWignerWeight(-50.);
+    else if (variation.first == mZShift100MeVUp)
+        weight = cenWeight*breitWignerWeight(100.);
+    else if (variation.first == mZShift100MeVDown)
+        weight = cenWeight*breitWignerWeight(-100.);
 
     if (leptons.size() < 2) {
         channel_ = Unknown;
@@ -103,7 +154,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     if (doFiducial_ && failStep != 0)
         return;
     if (variation.first == Central)
-        mcWeights_->Fill(weight/refWeight);
+        mcWeights_->Fill(weight/std::abs(refWeight));
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t minimalWeights = *nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
@@ -141,6 +192,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(weighthistMap1D_, "ZMass", channel_, variation.first, zCand.mass(), i, thweight);
             SafeHistFill(weighthistMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), i, thweight);
             SafeHistFill(weighthistMap1D_, "ptZ", channel_, variation.first, zCand.pt(), i, thweight);
+            SafeHistFill(weighthistMap1D_, "phiZ", channel_, variation.first, zCand.phi(), i, thweight);
             SafeHistFill(weighthistMap1D_, "ptl1", channel_, variation.first, lep1.pt(), i, thweight);
             SafeHistFill(weighthistMap1D_, "etal1", channel_, variation.first, lep1.eta(), i, thweight);
             SafeHistFill(weighthistMap1D_, "phil1", channel_, variation.first, lep1.phi(), i, thweight);
@@ -168,6 +220,7 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     SafeHistFill(histMap1D_, "ZMass", channel_, variation.first, zCand.mass(), weight);
     SafeHistFill(histMap1D_, "yZ", channel_, variation.first, zCand.Rapidity(), weight);
     SafeHistFill(histMap1D_, "ptZ", channel_, variation.first, zCand.pt(), weight);
+    SafeHistFill(histMap1D_, "phiZ", channel_, variation.first, zCand.phi(), weight);
     SafeHistFill(histMap1D_, "ptl1", channel_, variation.first, lep1.pt(), weight);
     SafeHistFill(histMap1D_, "etal1", channel_, variation.first, lep1.eta(), weight);
     SafeHistFill(histMap1D_, "phil1", channel_, variation.first, lep1.phi(), weight);

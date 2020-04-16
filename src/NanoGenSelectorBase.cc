@@ -312,6 +312,17 @@ void NanoGenSelectorBase::buildHessian2MCSet() {
     pdfweightshelper_.DoMC2Hessian(1., const_cast<const double*>(pdfWeights), LHEHessianPdfWeight);
 }
 
+double NanoGenSelectorBase::breitWignerWeight(double offset) {
+
+    double targetMass = MV_GEN_ + offset;
+    double s_hat = mVlhe*mVlhe;
+    double offshell = s_hat - MV_GEN_*MV_GEN_;
+    double offshellOffset = s_hat - targetMass*targetMass;
+    double weight = (offshell*offshell + GAMMAV_GEN_*GAMMAV_GEN_*MV_GEN_*MV_GEN_)/
+            (offshellOffset*offshellOffset + GAMMAV_GEN_*GAMMAV_GEN_*targetMass*targetMass);
+    return weight;
+}
+
 void NanoGenSelectorBase::SetupNewDirectory() {
     SelectorBase::SetupNewDirectory();
     AddObject<TH1D>(mcWeights_, "genWeights", "gen weights", 200, -10, 10);

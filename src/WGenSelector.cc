@@ -48,16 +48,16 @@ void WGenSelector::Init(TTree *tree)
     
     // Chose by MC sample
     if (name_.find("nnlops") != std::string::npos) {
-        MW_GEN_ = 80398.0;
-        GAMMAW_GEN_ = 2088.720;
+        MV_GEN_ = 80398.0;
+        GAMMAV_GEN_ = 2088.720;
     }
     else if (name_.find("minnlo") != std::string::npos) {
-        MW_GEN_ = 80351.97159;
-        GAMMAW_GEN_ = 2084.29889;
+        MV_GEN_ = 80351.97159;
+        GAMMAV_GEN_ = 2084.29889;
     }
     else {
-        MW_GEN_ = 80419.;
-        GAMMAW_GEN_ = 2050;
+        MV_GEN_ = 80419.;
+        GAMMAV_GEN_ = 2050;
     }
 
     NanoGenSelectorBase::Init(tree);
@@ -86,7 +86,7 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         cenWeight = weight;
     else if (variation.first == LHEParticles) {
         ptVlhe = wCand.pt();
-        mWlhe = wCand.mass()*1000.;
+        mVlhe = wCand.mass()*1000.;
     }
     else if (variation.first == mWShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
@@ -134,17 +134,6 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         channelName_ = "Unknown";
         return;
     }
-}
-
-double WGenSelector::breitWignerWeight(double offset) {
-
-    double targetMass = MW_GEN_ + offset;
-    double s_hat = mWlhe*mWlhe;
-    double offshell = s_hat - MW_GEN_*MW_GEN_;
-    double offshellOffset = s_hat - targetMass*targetMass;
-    double weight = (offshell*offshell + GAMMAW_GEN_*GAMMAW_GEN_*MW_GEN_*MW_GEN_)/
-            (offshellOffset*offshellOffset + GAMMAW_GEN_*GAMMAW_GEN_*targetMass*targetMass);
-    return weight;
 }
 
 void WGenSelector::SetComposite() {
@@ -200,7 +189,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
     if (variation.first == Central)
-        mcWeights_->Fill(weight/refWeight);
+        mcWeights_->Fill(weight/std::abs(refWeight));
 
     if (doFiducial_ && lep.pt() < 25)
         return;

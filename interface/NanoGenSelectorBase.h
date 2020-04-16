@@ -46,6 +46,9 @@ public :
     static const unsigned int N_LHEPDFAS_WEIGHTS_ = 102;
     static const unsigned int N_MC2HESSIAN_WEIGHTS_ = 60;
     float weight;
+    float mVlhe;
+    float MV_GEN_;
+    float GAMMAV_GEN_;
     bool nnlops_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
@@ -143,6 +146,7 @@ protected:
     bool overlapsCollection(const LorentzVector& cand, reco::GenParticleCollection& collection, const float deltaRCut, size_t maxCompare);
     void buildHessian2MCSet();
     reco::GenParticle makeGenParticle(int pdgid, int status, float pt, float eta, float phi, float m);
+    double breitWignerWeight(double offset);
 };
 
 #endif
