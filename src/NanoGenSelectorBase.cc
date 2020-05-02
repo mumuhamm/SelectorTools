@@ -10,10 +10,17 @@ void NanoGenSelectorBase::Init(TTree *tree)
     refWeight = 1;
     TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
     doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+    TParameter<bool>* wSignOnly = (TParameter<bool>*) GetInputList()->FindObject("wSignOnly");
+    weightSignOnly_ = wSignOnly != nullptr && wSignOnly->GetVal();
+    TParameter<int>* wSuppress = (TParameter<int>*) GetInputList()->FindObject("wSuppress");
+    weightSuppress_ = wSuppress != nullptr ? wSuppress->GetVal() : 0;
+
     if (doTheoryVars_) {
         theoryVarSysts_.insert(theoryVarSysts_.begin(), Central);
         theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
         theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
+        theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVUp);
+        theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVDown);
     }
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");
@@ -278,6 +285,14 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     }
 
     weight = *genWeight;       
+    if (weightSignOnly_)
+        weight /= std::abs(*genWeight);
+    // The don't really work together
+    else if (weightSuppress_ && std::abs(*genWeight) > weightSuppress_) {
+        weight = 0;
+        *genWeight = 0;
+    }
+
     if (refWeight == 1)
         refWeight = weight;
 

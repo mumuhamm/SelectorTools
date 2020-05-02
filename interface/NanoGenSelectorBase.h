@@ -50,6 +50,8 @@ public :
     float MV_GEN_;
     float GAMMAV_GEN_;
     bool nnlops_ = false;
+    int weightSuppress_ = 0;
+    bool weightSignOnly_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
     bool doPhotons_ = true;

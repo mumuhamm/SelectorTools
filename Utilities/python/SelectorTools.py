@@ -333,6 +333,10 @@ class SelectorDriver(object):
     # You can use filenum to index the files and sum separately, but it's not necessary
     def fillSumweightsHist(self, rtfile, filenum=1):
         sumWeightsType = "fromTree"
+        weightSignOnly = filter(lambda x: "wSignOnly" in x.GetName(), self.inputs)
+        wSuppress = filter(lambda x: "wSuppress" in x.GetName(), self.inputs)
+        weightSignOnly = weightSignOnly[0].GetVal() if weightSignOnly else False
+        wSuppress = wSuppress[0].GetVal() if wSuppress else 0
 
         if self.ntupleType == "NanoAOD":
             nevents_branch = "genEventCount"
@@ -341,6 +345,9 @@ class SelectorDriver(object):
             if not rtfile.Get(meta_tree_name).GetBranch(sumweights_branch):
                 sumweights_branch += "_"
                 nevents_branch += "_"
+            if weightSignOnly or wSuppress:
+                meta_tree_name = "Events"
+                sumweights_branch = "genWeight" 
         elif self.ntupleType == "Bacon":
             sumWeightsType = "fromHist"
             weightshist_name = "hGenWeights"
@@ -355,11 +362,17 @@ class SelectorDriver(object):
             meta_tree = rtfile.Get(meta_tree_name)
             tmplabel = sumweights_hist.GetName()+"_i"
             tmpweights_hist = sumweights_hist.Clone(tmplabel)
+
             draw_weight = sumweights_branch 
+            if weightSignOnly:
+                draw_weight = "(%s > 0 ? 1 : -1)" % draw_weight
+            if wSuppress:
+                draw_weight = "%s*(%s < %s)" % (draw_weight, sumweights_branch, wSuppress)
             if self.maxEntries and self.maxEntries > 0:
                 logging.warning("maxEntries is a subset of all the events in the file." \
                     " The sumweights hist will be scaled to reflect this, but this is NOT exact!")
                 draw_weight += "*%i/%s" % (self.maxEntries, nevents_branch)
+
             meta_tree.Draw("%i>>%s" % (filenum, tmplabel), draw_weight)
             sumweights_hist.Add(tmpweights_hist)
         elif sumWeightsType == "fromHist":
