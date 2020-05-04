@@ -1,9 +1,4 @@
 #!/bin/bash
-
-# Following implementation by N. Smith, Fermilab
-# https://gitlab.cern.ch/ncsmith/monoZ/tree/master/selector 
-
-tar xvzf ${tarball}
 CMSSW_RELEASE_BASE="${CMSSW_RELEASE_BASE}"
 
 source /cvmfs/cms.cern.ch/cmsset_default.sh
@@ -11,5 +6,10 @@ pushd $$CMSSW_RELEASE_BASE
 eval `scramv1 runtime -sh`
 popd
 export LD_LIBRARY_PATH=$$PWD/lib:$$LD_LIBRARY_PATH
-./Utilities/scripts/makeHistFile.py $$@ || exit $$?
 
+outfile=$$1
+if [[ $$1 == /eos/user* ]]; then
+    outfile="root://eosuser.cern.ch/$$1"
+fi
+
+hadd -f $$outfile *.root
