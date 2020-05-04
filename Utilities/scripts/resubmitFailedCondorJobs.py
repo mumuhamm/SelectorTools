@@ -12,6 +12,8 @@ parser.add_argument("-l", "--log_dir", type=str,
         default="logs", help="Submit file name for resumission")
 parser.add_argument("-i", "--includeMode", action='store_true',
         help="Only print the line to be included in submit file")
+parser.add_argument("-d", "--with_dag", action='store_true',
+        help="Create dag for merge")
 
 args = parser.parse_args()
 
@@ -41,3 +43,13 @@ if not args.includeMode:
         resubmit.write("Queue 1 in " + ",".join(failed_ids))
 else:
     print "failedJobs = %s" % " ".join(failed_ids)
+
+if args.with_dag:
+    submit_lines = []
+    with open("submit_and_merge.dag", "r") as sub:
+        content = sub.readlines()
+        for line in content:
+            submit_lines.append(line.replace("submit", "resubmit"))
+
+    with open("resubmit_and_merge.dag", "w") as outfile:
+        outfile.write(''.join(submit_lines))
