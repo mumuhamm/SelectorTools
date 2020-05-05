@@ -1,14 +1,16 @@
 #include "Analysis/VVAnalysis/interface/LowPileupWSelector.h"
 #include <TStyle.h>
 #include <regex>
+#include "TParameter.h"
 
 void LowPileupWSelector::Init(TTree *tree)
 {
-    doSystematics_ = false;
-    //doSystematics_ = true;
+    TParameter<bool>* doSyst = (TParameter<bool>*) GetInputList()->FindObject("doSyst");
+    doSystematics_ = doSyst != nullptr && doSyst->GetVal();
+    std::cout << "INFO: doSystematics is " << doSystematics_ << std::endl;
     allChannels_ = {{ep, "ep"}, {en, "en"}, {mp, "mp"}, {mn, "mn"}};
 
-    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "ptl", "etal", "pfMet",};
+    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "phiW", "ptl", "etal", "pfMet", "pfMetPhi",};
     systHists_ = {"ptW", "ptl", "mtW", "pfMet"};
     systematics_ = {
         {muonEfficiencyMCSubtractUp, "CMS_eff_MCsubt_mUp"},
@@ -130,6 +132,9 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
     int metIndex = (isMC_ && (isW_ || isZ_) && !isNonprompt_);
     pfMet = metVector.At(metIndex);
     pfMetPhi = metPhiVector.At(metIndex);
+    if (!isMC_) {
+        pfMetPhi = *uncorrMetPhi + 3.14156;
+    }
 
     if (isMC_) {
         float cenwgt = evtWeight[systematicWeightMap_[Central]];
@@ -203,9 +208,11 @@ void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) {
     SafeHistFill(histMap1D_, "mtWUncorr", channel_, variation.first, *mtWuncorr, weight);
     SafeHistFill(histMap1D_, "ptW", channel_, variation.first, wCand.Pt(), weight);
     SafeHistFill(histMap1D_, "yW", channel_, variation.first, wCand.Rapidity(), weight);
+    SafeHistFill(histMap1D_, "phiW", channel_, variation.first, wCand.Phi(), weight);
     SafeHistFill(histMap1D_, "ptl", channel_, variation.first, lep->Pt(), weight);
     SafeHistFill(histMap1D_, "etal", channel_, variation.first, lep->Eta(), weight);
     SafeHistFill(histMap1D_, "pfMet", channel_, variation.first, pfMet, weight);
+    SafeHistFill(histMap1D_, "pfMetPhi", channel_, variation.first, pfMetPhi, weight);
 
     if (subprocessHistMaps1D_.empty()) {
         return;

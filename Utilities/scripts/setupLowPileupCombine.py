@@ -40,7 +40,7 @@ config_factory = ConfigHistFactory(
     "LowPileupW/NanoAOD",
 )
 
-plot_groups = ["data", "nonprompt", "vv", "dy", "wtv", "top", "wmv_jetbinned_nlo", ]
+plot_groups = ["data", "nonprompt_m", "vv", "dy", "wtv", "top", "wlnu_jetbinned_nlo", ]
 
 #ptbins = [0.0, 13.0, 26.0, 38.0, 50.0, 62.0, 75.0, 100.0]
 if not args.unbinnedSignal:
@@ -50,8 +50,11 @@ if not args.unbinnedSignal:
     plot_groups.append("wmv_jetbinned_nlo_pt100")
 
 plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plot_groups}
+print plotGroupsMap
 
-xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
+#xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
+files = ConfigureJobs.getListOfFiles([f for files in plotGroupsMap.values() for f in files], selection="Wselection")
+xsecs = { f : 1. for f in files }
 
 channels = ["mp", "mn"]
 if args.rebin:
@@ -76,11 +79,12 @@ variations = ["CMS_eff_MCsubt_m", "CMS_modeling_fsr", "CMS_eff_stat_m",
         "CMS_recoilCorrection_StatBin8",        
         "CMS_recoilCorrection_StatBin9",        
 ]
-cardtool.setVariations(variations, exclude=["nonprompt", "data"])
+cardtool.setVariations(variations, exclude=["nonprompt_e", "nonprompt_m", "data"])
 folder_name = "_".join(args.fitvars + ([args.append] if args.append != "" else []))
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/LowPileup/%s" % folder_name)
 
-cardtool.setFitVariableAppend("nonprompt", "Fakes")
+cardtool.setFitVariableAppend("nonprompt_m", "Fakes")
+cardtool.setFitVariableAppend("nonprompt_e", "Fakes")
 
 cardtool.setLumi(0.199)
 cardtool.setInputFile(args.input_file)
@@ -90,7 +94,7 @@ for fitvar in args.fitvars:
     cardtool.setCombineChannels({"all" : channels, "m" : ["mp", "mn"]})
     for process in plot_groups:
         #Turn this back on when the theory uncertainties are added
-        if process not in ["nonprompt", "data"] and False:
+        if process not in ["nonprompt_m", "nonprompt_e", "data"] and False:
             cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
             if "cp5" not in process and args.mc2hes:
                 # Exclude alpha_s variations

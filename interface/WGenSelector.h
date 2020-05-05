@@ -24,6 +24,9 @@ public :
     LorentzVector wCandMet;
     float mTtrue;
     float mTmet;
+    float cenWeight;
+    
+    float ptl_smear;
     
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;

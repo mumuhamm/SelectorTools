@@ -30,7 +30,7 @@ enum Channel {
 };
   
 enum Systematic {
-    Central,
+    Central=0,
     jetEnergyScaleUp,          jetEnergyScaleDown,
     jetEnergyResolutionUp,     jetEnergyResolutionDown,
     metUnclusteredEnergyUp,    metUnclusteredEnergyDown,
@@ -57,6 +57,14 @@ enum Systematic {
     recoilCorrectionStat7Up,      recoilCorrectionStat7Down,     
     recoilCorrectionStat8Up,      recoilCorrectionStat8Down,     
     recoilCorrectionStat9Up,      recoilCorrectionStat9Down,     
+    BareLeptons, BornParticles, LHEParticles,
+    mWShift100MeVUp, mWShift50MeVUp, mWShift25MeVUp, mWShift20MeVUp, mWShift10MeVUp, 
+    mWShift100MeVDown, mWShift50MeVDown, mWShift25MeVDown, mWShift20MeVDown, mWShift10MeVDown, 
+    mZShift100MeVUp, mZShift50MeVUp, mZShift25MeVUp, mZShift20MeVUp, mZShift10MeVUp, 
+    mZShift100MeVDown, mZShift50MeVDown, mZShift25MeVDown, mZShift20MeVDown, mZShift10MeVDown, 
+    ptV0to3, ptV3to5, ptV5to7, ptV7to9, ptV9to12, ptV12to15, ptV15to20, ptV20to27, ptV27to40, ptV40toInf,
+    ptV0to3_lhe, ptV3to5_lhe, ptV5to7_lhe, ptV7to9_lhe, ptV9to12_lhe, ptV12to15_lhe, 
+    ptV15to20_lhe, ptV20to27_lhe, ptV27to40_lhe, ptV40toInf_lhe,
 }; 
 
     
@@ -108,6 +116,7 @@ class SelectorBase : public TSelector {
     };
 
     enum Selection {
+        Default,                      None,
         tightleptons,                 ZZGenFiducial,
         Wselection,                   Zselection,
         WselectionAntiIso,                   
@@ -133,8 +142,8 @@ class SelectorBase : public TSelector {
     typedef std::unordered_map<HistLabel, TH1D*> HistMap1D;
     typedef std::unordered_map<HistLabel, TH2D*> HistMap2D;
     typedef std::unordered_map<HistLabel, TH3D*> HistMap3D;
-    typedef std::map<Systematic, std::string> SystMap;
     typedef std::pair<Systematic, std::string> SystPair;
+    typedef std::map<Systematic, std::string> SystMap;
 
     /****************************/
     /*  __  __                  */
@@ -146,7 +155,9 @@ class SelectorBase : public TSelector {
     /****************************/
 
     std::map<std::string, Selection> selectionMap_ = {
-	{"tightleptons", tightleptons},
+        {"Default", Default},
+        {"None", None},
+        {"tightleptons", tightleptons},
         {"ZZGenFiducial", ZZGenFiducial},
         {"Wselection", Wselection},
         {"WselectionAntiIso", WselectionAntiIso},
@@ -279,9 +290,11 @@ class SelectorBase : public TSelector {
     std::vector<std::string> hists1D_ = {};
     std::vector<std::string> hists2D_ = {};
     std::vector<std::string> weighthists1D_ = {};
+    std::vector<std::string> weighthists2D_ = {};
     // The histograms for which you also want systematic variations
     std::vector<std::string> systHists_ = {};
     std::vector<std::string> systHists2D_ = {};
+    std::vector<Systematic> theoryVarSysts_ = {};
 
     // Variables
     std::string name_ = "Unnamed";

@@ -3,12 +3,12 @@ jmax 5  number of processes - 1
 kmax ${nuisances} number of nuisance parameters (sources of systematical uncertainties)
 ------------
 
-shapes Wmv          * ${output_file} wmv_jetbinned_nlo/${fit_variable}_$$CHANNEL wmv_jetbinned_nlo/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
+shapes wlnu         * ${output_file} wlnu_jetbinned_nlo/${fit_variable}_$$CHANNEL wlnu_jetbinned_nlo/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
 shapes vv           * ${output_file} vv/${fit_variable}_$$CHANNEL vv/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
 shapes dy           * ${output_file} dy/${fit_variable}_$$CHANNEL dy/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
 shapes wtv          * ${output_file} wtv/${fit_variable}_$$CHANNEL wtv/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
 shapes top          * ${output_file} top/${fit_variable}_$$CHANNEL top/${fit_variable}_$$SYSTEMATIC_$$CHANNEL
-shapes nonprompt    * ${output_file} nonprompt/${fit_variable}_Fakes_$$CHANNEL  nonprompt/${fit_variable}_Fakes_$$SYSTEMATIC_$$CHANNEL
+shapes nonprompt_m  * ${output_file} nonprompt_m/${fit_variable}_Fakes_$$CHANNEL  nonprompt_m/${fit_variable}_Fakes_$$SYSTEMATIC_$$CHANNEL
 shapes data_obs     * ${output_file} data/${fit_variable}_$$CHANNEL 
 
 bin           m
@@ -16,9 +16,9 @@ observation   ${data}
 
 ------------
 bin                                     m                   m               m               m               m               m                              
-process                                 nonprompt           vv              dy              wtv             top             Wmv
+process                                 nonprompt_m         vv              dy              wtv             top             wlnu 
 process                                 -1                  1               1               1               2               -2
-rate                                    ${nonprompt}        ${vv}           ${dy}           ${wtv}          ${top}          ${wmv_jetbinned_nlo}
+rate                                    ${nonprompt_m}       ${vv}           ${dy}           ${wtv}          ${top}          ${wlnu_jetbinned_nlo}
 ------------                                                                                                                                               
 lumi2016_13TeV                  lnN     -                   1.017           1.017           1.017           1.017           1.017                          
 CMS_norm_nonprompt              lnN     1.1                 -               -               -               -               -                              

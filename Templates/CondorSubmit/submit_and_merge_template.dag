@@ -1,0 +1,4 @@
+JOB A submit.jdl
+SCRIPT POST A completed.sh ${minComplete}
+JOB B merge.jdl
+PARENT A CHILD B

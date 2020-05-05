@@ -26,7 +26,8 @@ struct BranchManager {
 
   template<typename T>
   void SetSpecificBranch(std::string name, T& holder) {
-    specificBranch[name] = {};
+    if (specificBranch.find(name) != specificBranch.end())
+        specificBranch[name] = {};
     fChain->SetBranchAddress(name.c_str(), &holder, &specificBranch[name]);
   }
 
@@ -43,6 +44,11 @@ struct BranchManager {
   void CleanUp() {
     branchHolder.clear();
     specificBranch.clear();
+  }
+
+  void CleanSpecificBranch(std::string name) {
+    if (specificBranch.find(name) != specificBranch.end())
+        specificBranch.at(name) = nullptr;
   }
 };
 

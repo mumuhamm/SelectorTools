@@ -28,9 +28,9 @@ void SelectorBase::Init(TTree *tree)
 
     if (GetInputList() != nullptr) {
 	TNamed* ntupleType = (TNamed *) GetInputList()->FindObject("ntupleType");
-        TNamed* name = (TNamed *) GetInputList()->FindObject("name");
-        TNamed* chan = (TNamed *) GetInputList()->FindObject("channel");
-        TNamed* selection = (TNamed *) GetInputList()->FindObject("selection");
+    TNamed* name = (TNamed *) GetInputList()->FindObject("name");
+    TNamed* chan = (TNamed *) GetInputList()->FindObject("channel");
+    TNamed* selection = (TNamed *) GetInputList()->FindObject("selection");
 	TNamed* year = (TNamed *) GetInputList()->FindObject("year");
 
 	if (ntupleType != nullptr) {
@@ -107,8 +107,6 @@ void SelectorBase::Init(TTree *tree)
 
 void SelectorBase::addSubprocesses(std::vector<std::string> processes) {
     subprocesses_ = processes;
-    for (auto& proc : subprocesses_)
-        std::cout << "Subproces " << proc << std::endl;
 }
 
 void SelectorBase::setSubprocesses(std::string process) {
@@ -116,7 +114,7 @@ void SelectorBase::setSubprocesses(std::string process) {
     if (currentHistDir_ == nullptr) {
         currentHistDir_ = new TList();
         currentHistDir_->SetName(process.c_str());
-        std::cout << "Setting output dir name to " << process << std::endl;
+        std::cout << "Info: Setting output dir name to " << process << std::endl;
         fOutput->Add(currentHistDir_);
     }
         //throw std::invalid_argument(process + " is not a valid subprocess for selector!");
@@ -162,7 +160,7 @@ void SelectorBase::SetBranches() {
         
 }
 
-void SelectorBase::LoadBranches(Long64_t entry, std::pair<Systematic, std::string> variation) {
+void SelectorBase::LoadBranches(Long64_t entry, SystPair variation) {
     if (ntupleType_ == NanoAOD)
         LoadBranchesNanoAOD(entry, variation);
     else if (ntupleType_ == Bacon)
@@ -235,7 +233,19 @@ void SelectorBase::InitializeHistogramsFromConfig() {
         throw std::domain_error("Can't initialize histograms without passing histogram information to TSelector");
 
     InitializeHistMap(hists1D_,histMap1D_);
+    InitializeHistMap(hists2D_,histMap2D_);
     InitializeHistMap(weighthists1D_, weighthistMap1D_);
+    InitializeHistMap(weighthists2D_, weighthistMap2D_);
+
+    std::vector<std::string> tempSystHistNames;
+    for (auto& syst : systematics_) {
+        for (auto hist : systHists_) {
+            tempSystHistNames.push_back(hist + "_" + syst.second);
+        }
+        for (auto hist : systHists2D_) {
+            tempSystHistNames.push_back(hist + "_" + syst.second);
+        }
+    }
 
     for (auto && entry : *histInfo) {  
         TNamed* currentHistInfo = dynamic_cast<TNamed*>(entry);
@@ -252,8 +262,8 @@ void SelectorBase::InitializeHistogramsFromConfig() {
             if (histMap1D_.find(centralLabel) != histMap1D_.end() || histMap2D_.find(centralLabel) != histMap2D_.end()) { 
                 InitializeHistogramFromConfig(name, chan, histData);
             }
-            //No need to print warning for every channel
-            else 
+            // May add a syst hist to plotobjects for plotting purposes, surpress errors in this case
+            else if (std::find(tempSystHistNames.begin(), tempSystHistNames.end(), name) == tempSystHistNames.end())
                 std::cerr << "Skipping invalid histogram '" << name << "'" << std::endl;
         }
     }
@@ -282,58 +292,61 @@ void SelectorBase::InitializeHistogramFromConfig(std::string name, ChannelPair c
                     << std::endl;
         exit(1);
     }
-    std::string histName = getHistName(name, {}, channel.second);
     
-    int nbins = std::stoi(histData[1]);
-    float xmin = std::stof(histData[2]);
-    float xmax = std::stof(histData[3]);
+    int nbins = std::stoi(histData.at(1));
+    float xmin = std::stof(histData.at(2));
+    float xmax = std::stof(histData.at(3));
+    
+    bool is1D = histData.size() == 4;
+    int nbinsy = is1D ? 1 : std::stoi(histData[4]);
+    float ymin = is1D ? 1. : std::stof(histData[5]);
+    float ymax = is1D ? 1. : std::stof(histData[6]);
 
-    HistLabel centralLabel = {name, channel.first, Central};
-    if (histData.size() == 4) {
-        AddObject<TH1D>(histMap1D_[centralLabel], histName.c_str(), histData[0].c_str(),nbins, xmin, xmax);
-        if (doSystematics_ && !isNonprompt_ && std::find(systHists_.begin(), systHists_.end(), name) != systHists_.end()) {
-            for (auto& syst : systematics_) {
-                HistLabel systLabel = {name, channel.first, syst.first};
-                std::string syst_histName = getHistName(name, syst.second, channel.second);
-                histMap1D_[systLabel] = {};
-                AddObject<TH1D>(histMap1D_[systLabel], syst_histName.c_str(), 
-                    histData[0].c_str(),nbins, xmin, xmax);
-                // TODO: Cleaner way to determine if you want to store systematics for weighted entries
-                //if (isaQGC_ && doaQGC_ && (weighthistMap1D_.find(name) != weighthistMap1D_.end())) { 
-                //    std::string weightsyst_histName = name+"_lheWeights_"+syst.second;
-                //    AddObject<TH2D>(weighthistMap1D_[syst_histName], 
-                //        (weightsyst_histName+"_"+channel).c_str(), histData[0].c_str(),
-                //        nbins, xmin, xmax, 1000, 0, 1000);
-                //}
+    for (auto& variation : variations_) {
+        std::string histName = getHistName(name, variation.second, channel.second);
+        HistLabel histlabel = {name, channel.first, variation.first};
+
+        if (variation.first == Central) {
+            if (is1D) 
+                AddObject<TH1D>(histMap1D_[histlabel], histName.c_str(), histData.at(0).c_str(),
+                        nbins, xmin, xmax);
+            else
+                AddObject<TH2D>(histMap2D_[histlabel], histName.c_str(), histData.at(0).c_str(), 
+                        nbins, xmin, xmax, nbinsy, ymin, ymax);
+        }
+        else if ((is1D && std::find(systHists_.begin(), systHists_.end(), name) == systHists_.end()) ||
+                    (!is1D && std::find(systHists2D_.begin(), systHists2D_.end(), name) == systHists2D_.end()))
+            continue;
+
+        if (is1D) {
+            histMap1D_[histlabel] = {};
+            AddObject<TH1D>(histMap1D_[histlabel], histName.c_str(), 
+                histData.at(0).c_str(), nbins, xmin, xmax);
+        }
+        else {
+            histMap1D_[histlabel] = {};
+            AddObject<TH2D>(histMap2D_[histlabel], histName.c_str(), 
+                histData.at(0).c_str(), nbins, xmin, xmax, nbinsy, ymin, ymax);
+        }
+
+        if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+            size_t pos = variation.first == Central ? name.size() : (name.size() + variation.second.size()+1);
+            std::string weighthistName = histName.insert(pos, "_lheWeights");
+            int nweights = variation.first == Central ? 2000 : 20;
+            if (is1D && std::find(weighthists1D_.begin(), weighthists1D_.end(), name) != weighthists1D_.end()) {
+                weighthistMap1D_[histlabel] = {};
+                AddObject<TH2D>(weighthistMap1D_[histlabel], 
+                    weighthistName.c_str(), histData[0].c_str(),
+                    nbins, xmin, xmax, nweights, 0, nweights);
             }
-        }
-        // Weight hists must be subset of 1D hists!
-        if (isMC_ && !isNonprompt_ && (weighthistMap1D_.find(centralLabel) != weighthistMap1D_.end())) { 
-            AddObject<TH2D>(weighthistMap1D_[centralLabel], 
-                (name+"_lheWeights_"+channel.second).c_str(), histData[0].c_str(),
-                nbins, xmin, xmax, 2000, 0, 2000);
-        }
-    }
-    else {
-        int nbinsy = std::stoi(histData[4]);
-        float ymin = std::stof(histData[5]);
-        float ymax = std::stof(histData[6]);
-        AddObject<TH2D>(histMap2D_[centralLabel], histName.c_str(), histData[0].c_str(),nbins, xmin, xmax,
-                nbinsy, ymin, ymax);
-        if (doSystematics_ && std::find(systHists2D_.begin(), systHists2D_.end(), name) != systHists2D_.end()) {
-            for (auto& syst : systematics_) {
-                HistLabel systLabel = {name, channel.first, syst.first};
-                std::string syst_histName = getHistName(name, syst.second, channel.second);
-                histMap2D_[systLabel] = {};
-                AddObject<TH2D>(histMap2D_[systLabel], syst_histName.c_str(), 
-                    histData[0].c_str(),nbins, xmin, xmax, nbinsy, ymin, ymax);
+            // 3D weight hists must be subset of 2D hists!
+            else if (std::find(weighthists2D_.begin(), weighthists2D_.end(), name) != weighthists2D_.end()) {
+                weighthistMap2D_[histlabel] = {};
+                AddObject<TH3D>(weighthistMap2D_[histlabel], 
+                    weighthistName.c_str(), histData[0].c_str(),
+                    nbins, xmin, xmax, nbinsy, ymin, ymax, nweights, 0, nweights);
+
             }
-        }
-        // 3D weight hists must be subset of 2D hists!
-        if (isMC_ && (weighthistMap2D_.find(centralLabel) != weighthistMap2D_.end())) { 
-            AddObject<TH3D>(weighthistMap2D_[centralLabel], 
-                (name+"_lheWeights_"+channel.second).c_str(), histData[0].c_str(),
-                nbins, xmin, xmax, nbinsy, ymin, ymax, 2000, 0, 2000);
         }
     }
 }

@@ -258,7 +258,10 @@ def getListOfFilesWithXSec(filelist, manager_path="", selection="ntuples"):
         if "data" in file_name.lower() or "nonprompt" in file_name.lower():
             info.update({file_name : 1})
         else:
-            file_info = mc_info[file_name.split("__")[0].replace("-", "")]
+            label = file_name.split("__")[0]
+            if label[0] == "-":
+                label = label[1:]
+            file_info = mc_info[label]
             kfac = file_info["kfactor"] if "kfactor" in file_info.keys() else 1
             # Intended to use for, e.g., nonprompt
             if file_name[0] == "-":
