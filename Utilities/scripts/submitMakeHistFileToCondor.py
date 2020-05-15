@@ -34,7 +34,14 @@ def getComLineArgs():
         "if > completeFraction (in %) jobs complete")
     parser.add_argument("--force", action='store_true',
         help="Force overwrite of existing directories")
-    return vars(parser.parse_args())
+    parser.add_argument("--removeUnmerged", action='store_true',
+        help="Remove unmerged ROOT files (requires DAG)")
+
+    args = parser.parse_args()
+    if args.removeUnmerged and not args.merge:
+        parser.error("--removeUnmerged requires --merge")
+
+    return vars(args)
 
 def makeSubmitDir(submit_dir, force):
     log_dir = submit_dir + "/logs"
@@ -45,7 +52,7 @@ def makeSubmitDir(submit_dir, force):
        raise IOError("Submit directory %s already exists! Use --force to overrite." % submit_dir) 
     os.makedirs(log_dir)
 
-def setupMergeStep(submit_dir, queue, numjobs, merge):
+def setupMergeStep(submit_dir, queue, numjobs, merge, removeUnmerged):
 
     merge_file = merge[0]
     completeFraction = float(merge[1])
@@ -66,9 +73,11 @@ def setupMergeStep(submit_dir, queue, numjobs, merge):
 
     template = "Templates/CondorSubmit/submit_and_merge_template.dag"
     outfile = "/".join([submit_dir, "submit_and_merge.dag"])
-    ConfigureJobs.fillTemplatedFile(template, outfile, {"minComplete" : int(completeFraction*numjobs)})
+    ConfigureJobs.fillTemplatedFile(template, outfile, 
+            {"minComplete" : int(completeFraction*numjobs),
+            "postMerge" : "SCRIPT POST B removeRootFiles.sh" if removeUnmerged else ""})
 
-    for f in ["list_infiles.sh", "completed.sh", ]:
+    for f in ["list_infiles.sh", "completed.sh", "removeRootFiles.sh"]:
         shutil.copy("Templates/CondorSubmit/%s" % f, "/".join([submit_dir, f]))
 
 def copyLibs():
@@ -170,7 +179,8 @@ def writeMetaInfo(submit_dir, filename):
         metafile.write("git hash: " + OutputTools.gitHash()+"\n")
         metafile.write("git diff: " + OutputTools.gitDiff()+"\n")
 
-def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tier, queue, numPerJob, force, das, selArgs, merge):
+def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tier, queue, 
+        numPerJob, force, das, selArgs, merge, removeUnmerged):
     makeSubmitDir(submit_dir, force)
     copyLibs()
     copyDatasetManagerFiles(analysis)
@@ -186,7 +196,7 @@ def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tie
             if queue != 'uw' else getUWCondorSettings()
     writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist_name, numfiles, numPerJob, selArgs)
     if merge:
-        setupMergeStep(submit_dir, queue, math.ceil(numfiles/numPerJob), merge)
+        setupMergeStep(submit_dir, queue, math.ceil(numfiles/numPerJob), merge, removeUnmerged)
 
     tarball_name = '_'.join([analysis, "AnalysisCode.tgz"])
     writeWrapperFile(submit_dir, tarball_name)
@@ -197,7 +207,7 @@ def main():
     args = getComLineArgs()
     submitDASFilesToCondor(args['filenames'], args['submit_dir'], args['analysis'], 
         args['selection'], args['input_tier'], args['queue'], args['files_per_job'], args['force'], 
-        not args['local'], args['selectorArgs'], args['merge'])
+        not args['local'], args['selectorArgs'], args['merge'], args['removeUnmerged'])
     if args['submit']:
         command = 'condor_submit' if not args['merge'] else 'condor_submit_dag'
         submitfile = 'submit.jdl' if not args['merge'] else 'submit_and_merge.dag'

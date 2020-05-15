@@ -65,15 +65,15 @@ public :
     TH1D* mcWeights_;
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;
-    TH1D* scaleWeights_;
+    TH1D* scaleWeightsHist_;
     
     double LHEHessianPdfWeight[N_MC2HESSIAN_WEIGHTS_];
     // Values read from file
     TTreeReader     fReader;
     TTreeReaderValue<Float_t> genWeight = {fReader, "genWeight"};
-    TTreeReaderValue<UInt_t> nLHEScaleWeight = {fReader, "nLHEScaleWeight"};
-    TTreeReaderArray<Float_t> LHEScaleWeight = {fReader, "LHEScaleWeight"};
     
+    UInt_t nLHEScaleWeight = 0;
+    Float_t LHEScaleWeight[N_LHESCALE_WEIGHTS_];
     UInt_t nLHEPdfWeight = 0;
     Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
     UInt_t nLHEScaleWeightAltSet1 = 0;
@@ -92,6 +92,7 @@ public :
     TBranch* b_nLHEUnknownWeightAltSet1;
     TBranch* b_LHEUnknownWeightAltSet1;
 
+    bool scaleWeights_ = false;
     bool altScaleWeights_ = false;
     bool pdfWeights_ = false;
     bool unknownWeights_ = false;

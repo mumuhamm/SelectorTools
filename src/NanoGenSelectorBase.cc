@@ -60,6 +60,7 @@ void NanoGenSelectorBase::Init(TTree *tree)
         }
     }
     b.SetTree(tree);
+    scaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeight") != nullptr);
     altScaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeightAltSet1") != nullptr);
     unknownWeights_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeight") != nullptr);
     unknownWeightsAlt_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeightAltSet1") != nullptr);
@@ -137,6 +138,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         }
     }
 
+    if (!scaleWeights_)
+        nLHEScaleWeight = 0;
     if (!altScaleWeights_)
         nLHEScaleWeightAltSet1 = 0;
     if (!pdfWeights_)
@@ -296,8 +299,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     if (refWeight == 1)
         refWeight = weight;
 
-    if (centralWeightIndex_ != -1) {
-        weight *= LHEScaleWeight.At(centralWeightIndex_);
+    if (centralWeightIndex_ != -1 && scaleWeights_) {
+        weight *= LHEScaleWeight[centralWeightIndex_];
     }
     if (doMC2H_)
         buildHessian2MCSet();
@@ -343,7 +346,7 @@ void NanoGenSelectorBase::SetupNewDirectory() {
     AddObject<TH1D>(mcWeights_, "genWeights", "gen weights", 200, -10, 10);
     AddObject<TH1D>(mcPdfWeights_, "MCPdfweights", "MC pdf weights", 200, 0, 2);
     AddObject<TH1D>(hesPdfWeights_, "Hesweights", "Hessian pdf weights", 200, 0, 2);
-    AddObject<TH1D>(scaleWeights_, "scaleweights", "Scale weights", 200, 0, 2);
+    AddObject<TH1D>(scaleWeightsHist_, "scaleweights", "Scale weights", 200, 0, 2);
 
     InitializeHistogramsFromConfig();
 }
