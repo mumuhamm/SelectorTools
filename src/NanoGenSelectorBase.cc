@@ -101,6 +101,10 @@ void NanoGenSelectorBase::Init(TTree *tree)
 }
 
 void NanoGenSelectorBase::SetBranchesNanoAOD() {
+    if (scaleWeights_) {
+        b.SetSpecificBranch("nLHEScaleWeight", nLHEScaleWeight);
+        b.SetSpecificBranch("LHEScaleWeight", LHEScaleWeight);
+    }
     if (altScaleWeights_) {
         b.SetSpecificBranch("nLHEScaleWeightAltSet1", nLHEScaleWeightAltSet1);
         b.SetSpecificBranch("LHEScaleWeightAltSet1", LHEScaleWeightAltSet1);
@@ -121,6 +125,10 @@ void NanoGenSelectorBase::SetBranchesNanoAOD() {
 
 void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
     weight = 1;
+    if (scaleWeights_) {
+        b.SetSpecificEntry(entry, "nLHEScaleWeight");
+        b.SetSpecificEntry(entry, "LHEScaleWeight");
+    }
     if (altScaleWeights_) {
         b.SetSpecificEntry(entry, "nLHEScaleWeightAltSet1");
         b.SetSpecificEntry(entry, "LHEScaleWeightAltSet1");

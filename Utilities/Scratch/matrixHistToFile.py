@@ -1,6 +1,6 @@
 # coding: utf-8
 import ROOT
-w = True
+w = False
 variables = {
     "ptZ" : { "histname" : "pT_lep1_lep2",
         "rebinScale" : 10*0.001,
@@ -14,10 +14,12 @@ variables = {
 }
 pdf = "31"
 outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_EWParamMatch_NNPDF%s.root" % pdf
+#outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_DefaultParams_NNPDF%s.root" % pdf
 chan="mm"
 
 if w:
     outfile_name = "/eos/user/k/kelong/HistFiles/WGen/NoSelection/WpToMuNu_MATRIX_EWParamMatch_NNPDF%s.root" % pdf
+    #outfile_name = "/eos/user/k/kelong/HistFiles/WGen/NoSelection/WpToMuNu_MATRIX_DefaultParams_NNPDF%s.root" % pdf
     variables = {
         "ptW" : { "histname" : "pT_W",
             "rebinScale" : 10*0.001,
@@ -37,6 +39,9 @@ outfile = ROOT.TFile(outfile_name, "recreate")
 for order in ["NNLO", ]:
     file_path = "/eos/user/k/kelong/MatrixFiles/NNPDF%s_MatchEWParams" % pdf
     process = "DYm50_matrix" if not w else "wpmunu_matrix"
+    if "Default" in outfile_name:
+        file_path = "/eos/user/k/kelong/MatrixFiles/NNPDF%s" % pdf
+        process = process+"__default" 
     if pdf == "30":
         process += "_nnpdf30" 
     if order[:3] == "NLO":
@@ -66,3 +71,7 @@ for order in ["NNLO", ]:
             new_hist = tmp.Clone(new_name)
             new_hist.Scale(value["rebinScale"]) 
             new_hist.Write()
+            empty_hist = tmp.Clone(new_name.replace("mm", "ee").replace("mp", "ep"))
+            empty_hist.Scale(0)
+            empty_hist.Write()
+print outfile

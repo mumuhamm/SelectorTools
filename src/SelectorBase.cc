@@ -59,6 +59,7 @@ void SelectorBase::Init(TTree *tree)
             std::cerr << "INFO: Using default name \"Unknown\" for file" << std::endl;
             name_ = "Unknown";
         }
+
 	if(year != nullptr) {
 	    year_ = yearMap_[year->GetTitle()];
 	}
@@ -114,7 +115,6 @@ void SelectorBase::setSubprocesses(std::string process) {
     if (currentHistDir_ == nullptr) {
         currentHistDir_ = new TList();
         currentHistDir_->SetName(process.c_str());
-        std::cout << "Info: Setting output dir name to " << process << std::endl;
         fOutput->Add(currentHistDir_);
     }
         //throw std::invalid_argument(process + " is not a valid subprocess for selector!");

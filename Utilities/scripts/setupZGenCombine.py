@@ -34,7 +34,6 @@ parser.add_argument("-r", "--rebin",
                     "values (bin edges) separated by commas.")
 args = parser.parse_args()
 
-channels = ["mp", "mn"]
 logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
 
 cardtool = CombineCardTools.CombineCardTools()
@@ -64,8 +63,8 @@ plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plo
 
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
 
-#channels = ["ee", "mm"]
-channels = ["mm"]
+channels = ["ee", "mm"]
+#channels = ["mm"]
 rebin = array.array('d', args.rebin) if args.rebin else None
 cardtool.setFitVariable(args.fitvar)
 if rebin:
@@ -90,6 +89,8 @@ for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
     if "update_ref" in process or "lowcutoff" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
+    elif "minnlo_svn3741" in process:
+        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
     elif "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
         if not args.noPdf:

@@ -248,8 +248,9 @@ class SelectorDriver(object):
                     return False
             if addSumweights:
                 if not sumweights_hist:
-                    logging.warning("Failed to find sumweights for dataset %s" % dataset)
-                dataset_list.Add(sumweights_hist)
+                    logging.warning("Failed to find sumweights for process %s" % process)
+                else:
+                    dataset_list.Add(sumweights_hist.Clone())
             OutputTools.writeOutputListItem(dataset_list, self.current_file)
             map(lambda x: x.Delete(), dataset_list)
             del dataset_list
@@ -376,7 +377,7 @@ class SelectorDriver(object):
             meta_tree.Draw("%i>>%s" % (filenum, tmplabel), draw_weight)
             sumweights_hist.Add(tmpweights_hist)
         elif sumWeightsType == "fromHist":
-            new_sumweights_hist = rtfile.Get("hGenWeights")
+            new_sumweights_hist = rtfile.Get(weightshist_name)
             if sumweights_hist and new_sumweights_hist:
                 sumweights_hist.Add(new_sumweights_hist)
                 sumweights_hist.SetDirectory(ROOT.gROOT)

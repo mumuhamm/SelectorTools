@@ -12,12 +12,16 @@ observation  -1
 ------------
 bin                             ee          
 process                         ${dy_sample}
-process                         5           
-rate                            ${dy_lo_cp5}
+process                         5          
+rate                            ${dy_yield}
 ------------                                
 lumi2016_13TeV          lnN     1.025       
 dummyErr_ee             lnN     1.02        
 dummyErr_nonpromp       lnN     1.02        
 QCDscale_${dy_sample}   shape   1           
 pdf_${dy_sample}        shape   1           
+
+
+
+
 

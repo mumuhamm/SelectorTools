@@ -158,7 +158,8 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
-        size_t nWeights = variation.first == Central ? minimalWeights : minimalWeights+nLHEPdfWeight;
+        size_t nWeights = variation.first == Central ? minimalWeights+nLHEPdfWeight : minimalWeights;
+        std::cout << "Variation " << variation.second << " nweights " << nWeights << std::endl;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < nLHEScaleWeight)
@@ -168,12 +169,13 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             else if (i < minimalWeights-nLHEUnknownWeightAltSet1)
                 thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1];
             else if (i < minimalWeights)
-                thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeightAltSet1];
+                thweight = LHEUnknownWeightAltSet1[i-minimalWeights+nLHEUnknownWeightAltSet1];
             else 
                 thweight = LHEPdfWeight[i-minimalWeights];
 
             if (centralWeightIndex_ != -1 && scaleWeights_)
                 thweight /= LHEScaleWeight[centralWeightIndex_];
+            std::cout << "weight " << i << " is " << thweight << std::endl;
 
             if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
                     ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||

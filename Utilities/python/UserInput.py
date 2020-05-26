@@ -58,6 +58,7 @@ def readPythonOrJson(file_path):
 def readAllInfo(file_path):
     info = {}
     for info_file in glob.glob(file_path):
+        file_info = {}
         try:
             file_info = readInfo(info_file)
         except ValueError:

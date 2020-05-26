@@ -1,6 +1,7 @@
 #include "Analysis/VVAnalysis/interface/LowPileupWSelector.h"
 #include <TStyle.h>
 #include <regex>
+#include <math.h>
 #include "TParameter.h"
 
 void LowPileupWSelector::Init(TTree *tree)
@@ -132,9 +133,6 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
     int metIndex = (isMC_ && (isW_ || isZ_) && !isNonprompt_);
     pfMet = metVector.At(metIndex);
     pfMetPhi = metPhiVector.At(metIndex);
-    if (!isMC_) {
-        pfMetPhi = *uncorrMetPhi + 3.14156;
-    }
 
     if (isMC_) {
         float cenwgt = evtWeight[systematicWeightMap_[Central]];
@@ -167,10 +165,7 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat7Up || 
                 variation.first == recoilCorrectionStat8Up || 
                 variation.first == recoilCorrectionStat9Up) {
-            double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
-            double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
-            pfMet = tempMet > pfMet ? tempMet : pfMet + (pfMet - tempMet);
-            pfMetPhi = tempMet > pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
+            metIndex = metCorrWeightMap_[variation.first];
         }
         else if (variation.first == recoilCorrectionEtaShapeDown ||
                 variation.first == recoilCorrectionRUShapesDown ||
@@ -185,27 +180,31 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat7Down || 
                 variation.first == recoilCorrectionStat8Down || 
                 variation.first == recoilCorrectionStat9Down) {
-            double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
-            double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
-            pfMet = tempMet < pfMet ? tempMet : pfMet - (tempMet - pfMet);
-            pfMetPhi = tempMet < pfMet ? tempMetPhi : pfMetPhi - (tempMetPhi - pfMetPhi);
+            metIndex = metCorrWeightMap_[variation.first];
         }
+        double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
+        double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
+        pfMet = tempMet > pfMet ? tempMet : pfMet + (pfMet - tempMet);
+        pfMetPhi = tempMet > pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
     }
+    if (pfMetPhi < 0) {
+        pfMetPhi = pfMetPhi + M_PI;
+    }
+    SetComposite();
 }
 
 void LowPileupWSelector::SetComposite() {
     pfMetVec = TLorentzVector();
     pfMetVec.SetPtEtaPhiM(pfMet, 0., pfMetPhi, 0.);
     wCand = *lep + pfMetVec;
-    //mtW = std::sqrt(2*lep->Pt()*pfMet*(1-std::cos(lep->Phi()-pfMetVec.Phi())));
+    mtWcalc = std::sqrt(2*lep->Pt()*pfMet*(1-std::cos(lep->Phi()-pfMetPhi)));
 }
 
 void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) { 
-    if (lep->Pt() < 25 || *mtW < 40)
+    if (lep->Pt() < 25 || mtWcalc < 40)
         return;
     SafeHistFill(histMap1D_, "mW", channel_, variation.first, wCand.M(), weight);
-    SafeHistFill(histMap1D_, "mtW", channel_, variation.first, *mtW, weight);
-    SafeHistFill(histMap1D_, "mtWUncorr", channel_, variation.first, *mtWuncorr, weight);
+    SafeHistFill(histMap1D_, "mtW", channel_, variation.first, mtWcalc, weight);
     SafeHistFill(histMap1D_, "ptW", channel_, variation.first, wCand.Pt(), weight);
     SafeHistFill(histMap1D_, "yW", channel_, variation.first, wCand.Rapidity(), weight);
     SafeHistFill(histMap1D_, "phiW", channel_, variation.first, wCand.Phi(), weight);
@@ -214,13 +213,13 @@ void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) {
     SafeHistFill(histMap1D_, "pfMet", channel_, variation.first, pfMet, weight);
     SafeHistFill(histMap1D_, "pfMetPhi", channel_, variation.first, pfMetPhi, weight);
 
-    if (subprocessHistMaps1D_.empty()) {
+    if (subprocessHistMaps1D_.empty() || !isW_ || genV == nullptr) {
         return;
     }
 
     //std::vector<int> binning = {0, 13, 26, 38, 50, 62, 75, 100};
     std::vector<int> binning = {0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100};
-    size_t upperIndex = std::distance(binning.begin(), std::upper_bound(binning.begin(), binning.end(), genVPt));
+    size_t upperIndex = std::distance(binning.begin(), std::upper_bound(binning.begin(), binning.end(), genV->Pt()));
 
     std::string binname = name_.substr(0, name_.size()-3);
     binname.append("_GenPtW_");

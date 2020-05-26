@@ -26,13 +26,14 @@ public :
     // Derived values
     TLorentzVector zCand;
 
-    TLorentzVector* lep1;
-    TLorentzVector* lep2;
+    TLorentzVector* lep1 = nullptr;
+    TLorentzVector* lep2 = nullptr;
     Float_t genWeight;
     Float_t PUWeight;
 
     UInt_t category;
 
+    TBranch* category_b;
     TBranch* lep1_b;
     TBranch* lep2_b;
 
