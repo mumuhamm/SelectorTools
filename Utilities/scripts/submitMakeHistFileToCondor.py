@@ -155,7 +155,7 @@ def writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist
         "queue" : queue,
         "filelist" : filelist.split(".txt")[0],
         "nPerJob" : nPerJob,
-        "nJobs" : int(math.ceil(numfiles/nPerJob)),
+        "nJobs" : int(math.ceil(float(numfiles)/nPerJob)),
         "extraArgs" : "--debug" if not selArgs else ("--debug --selectorArgs %s" % " ".join(selArgs))
     }
 
