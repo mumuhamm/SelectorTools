@@ -30,6 +30,7 @@ void WGenSelector::Init(TTree *tree)
         {mWShift20MeVDown, "mWShift20MeVDown"},
         {mWShift10MeVUp, "mWShift10MeVUp"},
         {BareLeptons, "barelep"},
+        {PreFSRLeptons, "prefsr"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
         {muonScaleUp, "CMS_scale_mUp"},
@@ -43,7 +44,7 @@ void WGenSelector::Init(TTree *tree)
 
     refWeight = 1;
     nLeptons_ = 1;
-    doNeutrinos_ = true;
+    nNeutrinos_ = 1;
     doPhotons_ = true;
     
     // Chose by MC sample
@@ -193,6 +194,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
 
     if (doFiducial_ && lep.pt() < 25)
         return;
+    SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
     float ptl_smear_fill = ptl_smear;
     if (variation.first == muonScaleUp)

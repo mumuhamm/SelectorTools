@@ -214,7 +214,8 @@ class SelectorDriver(object):
             if not sumweights_hist:
                 sumweights_hist = ROOT.TH1D("sumweights", "sumweights", 1000, 0, 1000)
             sumweights_hist.SetDirectory(ROOT.gROOT)
-            self.current_file = ROOT.TFile.Open(currfile_name, "update")
+            if currfile_name:
+                self.current_file = ROOT.TFile.Open(currfile_name, "update")
         self.processLocalFiles(select, file_path, addSumweights, chan)
 
         output_list = select.GetOutputList()

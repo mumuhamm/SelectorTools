@@ -31,12 +31,16 @@ public :
     reco::GenParticleCollection dressedLeptons;
     reco::GenParticleCollection bornLeptons;
     reco::GenParticleCollection lheLeptons;
+    reco::GenParticleCollection preFSRLeptons;
     reco::GenParticleCollection bornNeutrinos;
     reco::GenParticleCollection lheNeutrinos;
+    reco::GenParticleCollection preFSRNeutrinos;
     reco::GenParticleCollection fsneutrinos;
     reco::GenParticleCollection neutrinos;
     reco::GenParticleCollection photons;
     std::vector<LorentzVector> jets;
+    std::vector<LorentzVector> genjets;
+    std::vector<LorentzVector> lhejets;
     LorentzVector genMet;
 
     int centralWeightIndex_ = 0;
@@ -55,9 +59,11 @@ public :
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
     bool doPhotons_ = true;
-    bool doNeutrinos_ = true;
+    bool nNeutrinos_ = 0;
     bool doFiducial_ = false;
     bool doBorn_ = true;
+    bool doLHE_ = true;
+    bool doPreFSR_ = true;
     bool doBareLeptons_ = true;
 
     float refWeight = 1;

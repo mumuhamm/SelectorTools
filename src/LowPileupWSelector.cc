@@ -11,7 +11,7 @@ void LowPileupWSelector::Init(TTree *tree)
     std::cout << "INFO: doSystematics is " << doSystematics_ << std::endl;
     allChannels_ = {{ep, "ep"}, {en, "en"}, {mp, "mp"}, {mn, "mn"}};
 
-    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "phiW", "ptl", "etal", "pfMet", "pfMetPhi",};
+    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "phiW", "ptl", "phil", "etal", "pfMet", "pfMetPhi",};
     systHists_ = {"ptW", "ptl", "mtW", "pfMet"};
     systematics_ = {
         {muonEfficiencyMCSubtractUp, "CMS_eff_MCsubt_mUp"},
@@ -130,9 +130,14 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
             }
         }
     }
-    int metIndex = (isMC_ && (isW_ || isZ_) && !isNonprompt_);
+    int metIndex = ((isW_ || isZ_) && !isNonprompt_);
     pfMet = metVector.At(metIndex);
     pfMetPhi = metPhiVector.At(metIndex);
+
+    SetComposite();
+    if (metIndex >= 0 && genV && (genV->Pt() > 0 || genV->Pt() < 150)) {
+        pfMetPhi = pfMetPhi - M_PI;
+    }
 
     if (isMC_) {
         float cenwgt = evtWeight[systematicWeightMap_[Central]];
@@ -166,6 +171,10 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat8Up || 
                 variation.first == recoilCorrectionStat9Up) {
             metIndex = metCorrWeightMap_[variation.first];
+            double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
+            double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
+            pfMet = tempMet > pfMet ? tempMet : pfMet + (pfMet - tempMet);
+            pfMetPhi = tempMet > pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
         }
         else if (variation.first == recoilCorrectionEtaShapeDown ||
                 variation.first == recoilCorrectionRUShapesDown ||
@@ -181,27 +190,25 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat8Down || 
                 variation.first == recoilCorrectionStat9Down) {
             metIndex = metCorrWeightMap_[variation.first];
+            double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
+            double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
+            pfMet = tempMet < pfMet ? tempMet : pfMet + (pfMet - tempMet);
+            pfMetPhi = tempMet < pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
         }
-        double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
-        double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
-        pfMet = tempMet > pfMet ? tempMet : pfMet + (pfMet - tempMet);
-        pfMetPhi = tempMet > pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
     }
-    if (pfMetPhi < 0) {
-        pfMetPhi = pfMetPhi + M_PI;
-    }
-    SetComposite();
+    //SetComposite();
 }
 
 void LowPileupWSelector::SetComposite() {
-    pfMetVec = TLorentzVector();
-    pfMetVec.SetPtEtaPhiM(pfMet, 0., pfMetPhi, 0.);
+    //pfMetVec = TLorentzVector();
+    pfMetVec.SetPtEtaPhiE(pfMet, 0., pfMetPhi, pfMet);
     wCand = *lep + pfMetVec;
     mtWcalc = std::sqrt(2*lep->Pt()*pfMet*(1-std::cos(lep->Phi()-pfMetPhi)));
 }
 
 void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) { 
-    if (lep->Pt() < 25 || mtWcalc < 40)
+    //if (lep->Pt() < 25 || mtWcalc < 40)
+    if (lep->Pt() < 25)
         return;
     SafeHistFill(histMap1D_, "mW", channel_, variation.first, wCand.M(), weight);
     SafeHistFill(histMap1D_, "mtW", channel_, variation.first, mtWcalc, weight);
@@ -209,6 +216,7 @@ void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) {
     SafeHistFill(histMap1D_, "yW", channel_, variation.first, wCand.Rapidity(), weight);
     SafeHistFill(histMap1D_, "phiW", channel_, variation.first, wCand.Phi(), weight);
     SafeHistFill(histMap1D_, "ptl", channel_, variation.first, lep->Pt(), weight);
+    SafeHistFill(histMap1D_, "phil", channel_, variation.first, lep->Phi(), weight);
     SafeHistFill(histMap1D_, "etal", channel_, variation.first, lep->Eta(), weight);
     SafeHistFill(histMap1D_, "pfMet", channel_, variation.first, pfMet, weight);
     SafeHistFill(histMap1D_, "pfMetPhi", channel_, variation.first, pfMetPhi, weight);

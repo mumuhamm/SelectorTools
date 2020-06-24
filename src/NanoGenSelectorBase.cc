@@ -19,6 +19,7 @@ void NanoGenSelectorBase::Init(TTree *tree)
         theoryVarSysts_.insert(theoryVarSysts_.begin(), Central);
         theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
         theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
+        theoryVarSysts_.insert(theoryVarSysts_.end(), PreFSRLeptons);
         theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVUp);
         theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVDown);
     }
@@ -93,10 +94,10 @@ void NanoGenSelectorBase::Init(TTree *tree)
     doFiducial_ = selection_ != None;
     if (!doFiducial_)
         std::cout << "INFO: No fiducial selection will be applied\n";
-    //doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
-    //doBareLeptons_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
-    doBorn_ = true;
-    doBareLeptons_ = true;
+    doBorn_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BornParticles; }) != systematics_.end();
+    doBareLeptons_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == BareLeptons; }) != systematics_.end();
+    doLHE_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == LHEParticles; }) != systematics_.end();
+    doPreFSR_ = std::find_if(systematics_.begin(), systematics_.end(), [](auto& s) { return s.first == PreFSRLeptons; }) != systematics_.end();
     fReader.SetTree(tree);
 }
 
@@ -170,12 +171,17 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     if (variation.first == Central) {
         bornLeptons.clear();
         dressedLeptons.clear();
+        preFSRLeptons.clear();
         bareLeptons.clear();
+        lheLeptons.clear();
 
         bornNeutrinos.clear();
+        preFSRNeutrinos.clear();
         fsneutrinos.clear();
+        lheNeutrinos.clear();
 
         jets.clear();
+        lhejets.clear();
         for (size_t i = 0; i < *nGenDressedLepton; i++) {
             LorentzVector vec;
             if (GenDressedLepton_hasTauAnc.At(i)) {
@@ -185,12 +191,16 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
                                         GenDressedLepton_eta.At(i), GenDressedLepton_phi.At(i), GenDressedLepton_mass.At(i)));
         } // No need to sort, they're already pt sorted
         leptons = dressedLeptons;
+        // only valid for photos. If there was a radiation, the 746 leptons will have the pre-FSR kinematics.
+        // if no radiation, just use the final state leptons
+        bool foundStatus746 = false;
         // Do once, only if bare or born leptons are requested
-        if (doNeutrinos_ || doBorn_ || doBareLeptons_) {
+        if (nNeutrinos_ || doBorn_ || doBareLeptons_ || doPreFSR_) {
             for (size_t i = 0; i < *nGenPart; i++) {
+                bool fromHardProcessFS = GenPart_status.At(i) == 1 && ((GenPart_statusFlags.At(i) >> 8) & 1);
                 bool isHardProcess = (GenPart_statusFlags.At(i) >> 7) & 1;
                 bool isPrompt = (GenPart_statusFlags.At(i) >> 0) & 1;
-                if (!(isHardProcess || (GenPart_status.At(i) == 1 && isPrompt)))
+                if (!(isHardProcess || (GenPart_status.At(i) == 1 && isPrompt) || GenPart_status.At(i) == 746))
                     continue;
                 if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(GenPart_pdgId.At(i))) == idsToKeep.end())
                     continue;
@@ -202,12 +212,27 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
                         bareLeptons.emplace_back(part);
                     if (isHardProcess && doBorn_)
                         bornLeptons.emplace_back(part);
+                    // Only works with photos!
+                    if (doPreFSR_ && ((!foundStatus746 && fromHardProcessFS) || GenPart_status.At(i) == 746)) {
+                        if (GenPart_status.At(i) == 746 && !foundStatus746) {
+                            preFSRLeptons.clear();
+                            foundStatus746 = true;
+                        }
+                        preFSRLeptons.emplace_back(part);
+                    }
                 }
                 else if (std::abs(part.pdgId()) == 12 || std::abs(part.pdgId()) == 14) {
-                    if (GenPart_status.At(i) == 1)
+                    if (GenPart_status.At(i) == 1 && isPrompt)
                         fsneutrinos.emplace_back(part);
                     if (isHardProcess && doBorn_)
                         bornNeutrinos.emplace_back(part);
+                    if (doPreFSR_ && ((!foundStatus746 && fromHardProcessFS) || GenPart_status.At(i) == 746)) {
+                        if (GenPart_status.At(i) == 746 && !foundStatus746) {
+                            preFSRLeptons.clear();
+                            foundStatus746 = true;
+                        }
+                        preFSRNeutrinos.emplace_back(part);
+                    }
                 }
                 else if (std::abs(part.pdgId()) == 22 && isPrompt) {
                     photons.emplace_back(part);
@@ -222,9 +247,29 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
                 photons.end()
             );
         }
-        neutrinos = fsneutrinos;
+        if (doLHE_) {
+            for (size_t i = 0; i < *nLHEPart; i++) {
+                auto part = makeGenParticle(LHEPart_pdgId.At(i), 1, LHEPart_pt.At(i), 
+                        LHEPart_eta.At(i), LHEPart_phi.At(i), LHEPart_mass.At(i));
+
+                if (std::abs(part.pdgId()) == 11 || std::abs(part.pdgId()) == 13) {
+                    lheLeptons.emplace_back(part);
+                }
+                else if (std::abs(part.pdgId()) == 12 || std::abs(part.pdgId()) == 14) {
+                    lheNeutrinos.emplace_back(part);
+                }
+                // No dR check here, should add
+                else if ((std::abs(part.pdgId()) < 6 || std::abs(part.pdgId()) == 21) && part.pt() > 30) {
+                    lhejets.emplace_back(part.polarP4());
+                }
+            }
+        }
+
+        std::sort(lheLeptons.begin(), lheLeptons.end(), compareMaxByPt);
         std::sort(bareLeptons.begin(), bareLeptons.end(), compareMaxByPt);
-        std::sort(bornLeptons.begin(), bornLeptons.end(), compareMaxByPt);
+        std::sort(fsneutrinos.begin(), fsneutrinos.end(), compareMaxByPt);
+        std::sort(preFSRLeptons.begin(), preFSRLeptons.end(), compareMaxByPt);
+        neutrinos = fsneutrinos;
     }
     else if (variation.first == BareLeptons) {
         leptons = bareLeptons;
@@ -234,28 +279,11 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         leptons = bornLeptons;
         neutrinos = bornNeutrinos;
     }
+    else if (variation.first == PreFSRLeptons) {
+        leptons = preFSRLeptons;
+        neutrinos = preFSRNeutrinos;
+    }
     else if (variation.first == LHEParticles) {
-        lheLeptons.clear();
-        lheNeutrinos.clear();
-        for (size_t i = 0; i < *nLHEPart; i++) {
-            if (std::find(idsToKeep.begin(), idsToKeep.end(), std::abs(LHEPart_pdgId.At(i))) == idsToKeep.end())
-                continue;
-
-            auto part = makeGenParticle(LHEPart_pdgId.At(i), 1, LHEPart_pt.At(i), 
-                    LHEPart_eta.At(i), LHEPart_phi.At(i), LHEPart_mass.At(i));
-
-            if (std::abs(part.pdgId()) == 11 || std::abs(part.pdgId()) == 13) {
-                lheLeptons.emplace_back(part);
-            }
-            else if (std::abs(part.pdgId()) == 12 || std::abs(part.pdgId()) == 14) {
-                lheNeutrinos.emplace_back(part);
-            }
-            // No dR check here, should add
-            else if ((std::abs(part.pdgId()) < 6 || std::abs(part.pdgId()) == 21) && part.pt() > 30) {
-                jets.emplace_back(part.polarP4());
-            }
-        }
-        std::sort(lheLeptons.begin(), lheLeptons.end(), compareMaxByPt);
         leptons = lheLeptons;
         neutrinos = lheNeutrinos;
     }
@@ -278,22 +306,32 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
     }
         
     if (variation.first != LHEParticles) {
-        jets.clear();
         ht = 0;
+        jets.clear();
         for (size_t i = 0; i < *nGenJet; i++) {
             auto jet = makeGenParticle(0, 1, GenJet_pt.At(i), 
                     GenJet_eta.At(i), GenJet_phi.At(i), GenJet_mass.At(i));
-            if (jet.pt() > 30 && !helpers::overlapsCollection(jet.polarP4(), leptons, 0.4, nLeptons_)) {
+            // Just in case not using GenJetsNoNu
+            if (jet.pt() > 30 && !helpers::overlapsCollection(jet.polarP4(), leptons, 0.4, nLeptons_) &&
+                    !helpers::overlapsCollection(jet.polarP4(), neutrinos, 0.4, nNeutrinos_)) {
                 ht += jet.pt();
                 jets.emplace_back(jet.polarP4());
             }
         } // No need to sort jets, they're already pt sorted
 
-        genMet.SetPt(*MET_fiducialGenPt);
-        genMet.SetPhi(*MET_fiducialGenPhi);
-        genMet.SetM(0.);
-        genMet.SetEta(0.);
     }
+    else {
+        jets.clear();
+        for (auto& jet : lhejets) {
+            if (!helpers::overlapsCollection(jet, leptons, 0.4, nLeptons_))
+                jets.emplace_back(jet);
+        }
+    }
+
+    genMet.SetPt(*MET_fiducialGenPt);
+    genMet.SetPhi(*MET_fiducialGenPhi);
+    genMet.SetM(0.);
+    genMet.SetEta(0.);
 
     weight = *genWeight;       
     if (weightSignOnly_)

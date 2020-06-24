@@ -27,6 +27,7 @@ void ZGenSelector::Init(TTree *tree)
     doSystematics_ = true;
     systematics_ = {
         {BareLeptons, "barelep"},
+        {PreFSRLeptons, "prefsr"},
         {BornParticles, "born"},
         {LHEParticles, "lhe"},
         {mZShift100MeVUp, "mZShift100MeVUp"},
@@ -136,10 +137,11 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     if (lep1.pt() < 25. || lep2.pt() < 25.)
         failStep = step;
     step++;
-    if (std::abs(lep1.eta()) > 2.5 || std::abs(lep2.eta()) > 2.5)
+    if ((std::abs(lep1.eta()) > 2.5 || std::abs(lep2.eta()) > 2.5) ||
+            (selection_ == ZselectionTight && (std::abs(lep1.eta()) > 2.4 || std::abs(lep2.eta()) > 2.4)))
         failStep = step;
     step++;
-    if (zCand.mass() < 60. || zCand.mass() > 120.)
+    if ((zCand.mass() < 60. || zCand.mass() > 120.) || (selection_ == ZselectionTight && (zCand.mass() < 76.1876 || zCand.mass() > 106.1786)))
         failStep = step;
 
     for (int j = 0; j < (failStep == 0 ? step : failStep); j++) {
@@ -159,7 +161,6 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
         size_t nWeights = variation.first == Central ? minimalWeights+nLHEPdfWeight : minimalWeights;
-        std::cout << "Variation " << variation.second << " nweights " << nWeights << std::endl;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < nLHEScaleWeight)
@@ -175,7 +176,6 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
 
             if (centralWeightIndex_ != -1 && scaleWeights_)
                 thweight /= LHEScaleWeight[centralWeightIndex_];
-            std::cout << "weight " << i << " is " << thweight << std::endl;
 
             if (((variation.first == ptV0to3 || variation.first == ptV0to3_lhe) && ptVlhe > 3.) ||
                     ((variation.first == ptV3to5 || variation.first == ptV3to5_lhe) && (ptVlhe < 3. || ptVlhe > 5.))  ||

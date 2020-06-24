@@ -87,10 +87,18 @@ ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
 
 for process in plot_groups:
     #Turn this back on when the theory uncertainties are added
+    if "dy_matrix" in process:
+        cardtool.setVariations(["QCDscale_DYm50_matrix"])
+    else:
+        cardtool.setVariations([])
+
     if "update_ref" in process or "lowcutoff" in process:
         cardtool.addTheoryVar(process, 'scale', range(10, 19), exclude=[15, 17], central=0)
-    elif "minnlo_svn3741" in process:
+    elif "minnlo_pilot" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 7], central=4)
+        if not args.noPdf:
+            # NNPDF3.1
+            cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
     elif "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
         if not args.noPdf:

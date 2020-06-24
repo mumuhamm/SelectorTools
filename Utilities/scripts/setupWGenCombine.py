@@ -76,12 +76,11 @@ if "unrolled" in args.fitvar:
     #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(args.channels)
+print "Channels are", args.channels
 cardtool.setCrosSectionMap(xsecs)
 
-if not args.theoryOnly:
-    cardtool.setVariations(["mWShift100MeV", "mWShift20MeV", "mWShift50MeV", "CMS_scale_m"])
-else:
-    cardtool.setVariations([])
+variations = [] if args.theoryOnly else ["mWShift100MeV", "mWShift20MeV", "mWShift50MeV", "CMS_scale_m"] 
+cardtool.setVariations(variations)
 
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
@@ -98,6 +97,10 @@ ptbins = [0,3,5,7,9,12,15,20,27,40,100]
 ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
 
 for process in plot_groups:
+    if "wpmunu_matrix_marius" in process:
+        cardtool.setVariations(variations+["QCDscale_wpmunu_matrix__marius"])
+    else:
+        cardtool.setVariations(variations)
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[7, 9], central=0)
