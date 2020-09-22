@@ -95,8 +95,7 @@ Try these commands out and take a look at the output files (testZ.root and testW
 
 Using this you can also process multiple files from different datasets:
 
-```./Utilities/scripts/makeHistFile.py -f ZMGNLO@/store/mc/RunIISummer16NanoAODv7/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8_ext2-v1/120000/0643F6C0-C42B-564C-A9BD-161948BBFB81.root,ZMiNNLO@/store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOA
-ODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -o testZ.root```
+```./Utilities/scripts/makeHistFile.py -f ZMGNLO@/store/mc/RunIISummer16NanoAODv7/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8_ext2-v1/120000/0643F6C0-C42B-564C-A9BD-161948BBFB81.root,ZMiNNLO@/store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -o testZ.root```
 
 Now you should have two folders in your file, one named ZMGNLO and one named ZMiNNLO. These are meant to be used for comparisons of the same distribution from a different dataset. You can play around in ROOT to overlay plots of the same quanity (e.g., ptZ_mm).
 
