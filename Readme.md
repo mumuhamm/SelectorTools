@@ -18,9 +18,9 @@ Analysis code for WZ/ZZ analyses. Some scripts using selections to skim Ntuples 
 
 # Setup
 -----------
-CMSSW version: CMSSW_10_4_0 # or CMSSW_9_2_14
+CMSSW version: CMSSW_11_0_0
 ```bash
-X_Y_Z="10_4_0" # or 9_2_14
+cmssw_version="11_0_0" # or anything that isn't too old
 username="kdlong" # or your username
 ```
 
@@ -28,10 +28,10 @@ To checkout and compile:
 
 ```console
 cmsrel CMSSW_version
-cd CMSSW_X_Y_Z/src
+cd CMSSW_${cmssw_version}/src
 mkdir Analysis
 cd Analysis
-git clone git@github.com:<username>/VVAnalysis.git
+git clone git@github.com:<username>/SelectorTools.git
 scram b -j 8
 ```
 
@@ -48,16 +48,17 @@ You should create a new configuration file following the example [here](../maste
 
 # Overview
 -----------
-This repository includes scripts to run all steps (starting with [UWVV ntuples](https://github.com/uwcms/UWVV])) to produce the results of [SMP-18-001](http://cms.cern.ch/iCMS/analysisadmin/cadilines?line=SMP-18-001). Many steps should be trivially modifiable for other analyses.
+This repository includes scripts to analyze ROOT ntuples using implementations of the [TSelector](https://root.cern.ch/doc/master/classTSelector.html) class. It was originally developed for [SMP-18-001](http://cms.cern.ch/iCMS/analysisadmin/cadilines?line=SMP-18-001), which is still reflected in the WZSelector classes. Because the structure is quite general, it has been extended for other CMS results, as well as in general analysis based on NanoAOD, at either the RECO or GEN level.
 
-Current developement is in progress to also allow the use of NanoAOD in place of the UWVV ntuples. NanoAOD is a centrally-maintained ntuple which can signficantly reduce manpower needed to maintain private ntuples. More detail is given in the [NanoAOD](#nanoaod) section.
+Most of the current development is devoted to analyses based on NaanoAOD, a common ntuple format in CMS. More detail is given in the [NanoAOD](#nanoaod) section.
 
-The analysis processeeds in several steps.
+A general analysis will proceed in several steps.
 
-1. Produce ntuples using [UWVV](https://github.com/uwcms/UWVV]). See this package for further documentation. NanoAOD is also supported for some processes. In principle other packages could be used without much trouble, but variable names etc would need to be modified. Output is generally stored on a distributed storage system, e.g. /hdfs at UW or /eos at CERN.
-2. Skim ntuples or NanoAOD to create smaller files that can be copied to a "local" storage disk, such as /data at uwlogin or /nfs_scratch at Wisconsin. 
-3. Run analysis code to estimate backgrounds and produce histograms with final selections.
-4. Plotting code combines histograms by scaling with cross section and luminosity information. Colors and CMS style are implemented.
+1. Produce ntuples. This step is independent of this package. If using NanoAOD, it is generally not necessary to produce your own samples. If using NanoGen, some useful example scripts are [here](https://github.com/kdlong/WMassNanoGen). For UWVV, see [UWVV](https://github.com/uwcms/UWVV). 
+2. Skim ntuples or NanoAOD to create smaller files that can be copied to a "local" storage disk, such as /eos at CERN, /data at uwlogin or /nfs_scratch at Wisconsin. For NanoAOD, there are dedicated modules in the [NanoAODTools package](https://github.com/cms-nanoAOD/nanoAOD-tools).
+3. Run analysis code to produce histograms with final selections.
+4. Plotting code combines histograms by scaling with cross section and luminosity information. Colors and CMS style are implemented. Mostly outside the scope of this package.
+5. Perform fit (using HiggsCombine package)
 
 # Specifics
 -----------
@@ -75,32 +76,29 @@ Dilepton and 3 lepton specific skimming tools:
 
 https://github.com/kdlong/NanoVVSkims
 
-## Producing UWVV Ntuples
-
-See the documentation in [UWVV](https://github.com/uwcms/UWVV]). It is possible to use other ntuples, but you will need to make extensive changes to variable names in the skimming step and branch names in the analysis code.
-
-## Skimming UWVV Ntuples
-
-This code is based on ["cut strings"](https://root.cern.ch/doc/v608/classTCut.html) applied to ROOT TTrees. It is driven by the script [skimNtuples.py](skimNtuples.py). This script takes as argument the analysis name and a list of selections to be applied. These selections are defined in the [Cuts folder](Cuts) of this repository. To implement a new analysis, one should create a new folder in this repository. To add a selection, a new selection.json file should be added. Follow the example of e.g. [3LooseLeptonsNoVeto.json](Cuts/WZxsec2016/3LooseLeptonsNoVeto.json). Conditions can be object specific (e.g. pt for each muon or elector) or state specific.
-
-Run ```./skimNtuples.py --help``` for a full list of arguments to this script.
-
-Generally you will want to farm this step out to condor, as it's real utility is to take files on hdfs, skim them, and produce output which can be copied locally. The script [farmoutNtupleSkim.py](farmoutNtupleSkim.py) is intended for this. It reads information about the input datasets from [AnalysisDatasetManager](https://github.com/kdlong/AnalysisDatasetManager) and configures jobs to be submitted to condor using ```farmoutAnalysisJobs.sh```, a script which is UW condor specific. Modifications would be required for use with other resources.
-
-Run ```./farmoutNtupleSkim.py --help``` for a full list of arguments to this script.
-
-An example to produce the output for the WZ inclusive analysis, with loosely IDed leptons (necessary for the fake rate step) would be
-
-```./farmoutNtupleSkim.py -f data* -s 3MediumLeptonsNoVeto
-```
-
-This will submit jobs for each file with a name matching the pattern "data*", defined in AnalysisDatasetManager, creating a skim of events passing the [3LooseLeptonsNoVeto.json](Cuts/WZxsec2016/3LooseLeptonsNoVeto.json) selection. The script creates submit folders for each dataset, by default in the location ```/<storage>/<username>/YYYY-MM-DD_VVAnalysisJobs```, where <storage> is either /nfs_scratch or /data. It will produce output files copied to ```/store/user/<username>/VVAnalysisJobs_YYYY-MM-DD```. If you want to copy these locally, you can use the script [copyFromHdfs.py](https://github.com/kdlong/AnalysisDatasetManager/blob/master/copyFromHdfs.py).
-  
-``` ./copyFromHdfs.py /hdfs/store/user/<username>/...
-```
-
-
 ## Running analysis code
+
+The anlaysis code is driven by the script [makeHistFile.py](Utilities/scripts/makeHistFile.py). This script takes care of configuring the input and options and calling the C++ selector for the appropriate configuration with the appropriate arguments. Run ```./Utilities/scripts/makeHistfile.py --help``` to see the list of options.
+
+
+### Gen analysis on NanoAOD
+
+The Gen analysis on NanoAOD is based on the class [NanoGenSelector.cc](src/NanoGenSelector.cc). This class reads the variables from a NanoAOD and configures the job. Specific anlayses for W and Z selections are implemented in [ZGenSelector.cc](src/ZGenSelector.cc) and [ZGenSelector.cc](src/WGenSelector.cc). Test commands to run these analyses are
+
+```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -a ZGen -s None --input_tier NanoAOD -o testZ.root```
+
+```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/260000/AFEFB52A-AB45-334A-AFBD-C2FD0D28F3D6.root -a WGen -s None --input_tier NanoAOD -o testZ.root```
+
+Try these commands out and take a look at the output files (testZ.root and testW.root). Many histograms should be produced inside the main folder, which is name "Unknown," because you haven't specified a name. You can browse using the TBrowser, for example. You can specify a name for your folder using name@path, for example, to name the folder ZMiNNLO:
+
+```./Utilities/scripts/makeHistFile.py -f ZMiNNLO@/store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -a ZGen -s None --input_tier NanoAOD -o testZ.root```
+
+Using this you can also process multiple files from different datasets:
+
+```./Utilities/scripts/makeHistFile.py -f ZMGNLO@/store/mc/RunIISummer16NanoAODv7/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8_ext2-v1/120000/0643F6C0-C42B-564C-A9BD-161948BBFB81.root,ZMiNNLO@/store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOA
+ODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -o testZ.root```
+
+Now you should have two folders in your file, one named ZMGNLO and one named ZMiNNLO. These are meant to be used for comparisons of the same distribution from a different dataset. You can play around in ROOT to overlay plots of the same quanity (e.g., ptZ_mm).
 
 ### The Z selector example
 
@@ -135,15 +133,37 @@ So, if you want to run a basic analysis, you could write:
 ```
 So this corresponds to running the ZSelector over the events in the dy and data_2016 files that were skimmed with NanoDileptonSkims and analyzed to TightWithLooseVeto. The Luminosity is 35.9 and we are ignoring data driven backgrounds (--test)
 
+## Running anlaysis on condor
+
 ### Implementing your own selector
 
-### The WZ selector
-
-### Nonprompt background estimate for WZ
-
-## Running Statistical Analysis 
+## Running Statistical Analysis with Higgs combine
 
 ## Plotting
+
+## Producing UWVV Ntuples
+
+See the documentation in [UWVV](https://github.com/uwcms/UWVV]). It is possible to use other ntuples, but you will need to make extensive changes to variable names in the skimming step and branch names in the analysis code.
+
+## Skimming UWVV Ntuples
+
+This code is based on ["cut strings"](https://root.cern.ch/doc/v608/classTCut.html) applied to ROOT TTrees. It is driven by the script [skimNtuples.py](skimNtuples.py). This script takes as argument the analysis name and a list of selections to be applied. These selections are defined in the [Cuts folder](Cuts) of this repository. To implement a new analysis, one should create a new folder in this repository. To add a selection, a new selection.json file should be added. Follow the example of e.g. [3LooseLeptonsNoVeto.json](Cuts/WZxsec2016/3LooseLeptonsNoVeto.json). Conditions can be object specific (e.g. pt for each muon or elector) or state specific.
+
+Run ```./skimNtuples.py --help``` for a full list of arguments to this script.
+
+Generally you will want to farm this step out to condor, as it's real utility is to take files on hdfs, skim them, and produce output which can be copied locally. The script [farmoutNtupleSkim.py](farmoutNtupleSkim.py) is intended for this. It reads information about the input datasets from [AnalysisDatasetManager](https://github.com/kdlong/AnalysisDatasetManager) and configures jobs to be submitted to condor using ```farmoutAnalysisJobs.sh```, a script which is UW condor specific. Modifications would be required for use with other resources.
+
+Run ```./farmoutNtupleSkim.py --help``` for a full list of arguments to this script.
+
+An example to produce the output for the WZ inclusive analysis, with loosely IDed leptons (necessary for the fake rate step) would be
+
+```./farmoutNtupleSkim.py -f data* -s 3MediumLeptonsNoVeto
+```
+
+This will submit jobs for each file with a name matching the pattern "data*", defined in AnalysisDatasetManager, creating a skim of events passing the [3LooseLeptonsNoVeto.json](Cuts/WZxsec2016/3LooseLeptonsNoVeto.json) selection. The script creates submit folders for each dataset, by default in the location ```/<storage>/<username>/YYYY-MM-DD_VVAnalysisJobs```, where <storage> is either /nfs_scratch or /data. It will produce output files copied to ```/store/user/<username>/VVAnalysisJobs_YYYY-MM-DD```. If you want to copy these locally, you can use the script [copyFromHdfs.py](https://github.com/kdlong/AnalysisDatasetManager/blob/master/copyFromHdfs.py).
+  
+``` ./copyFromHdfs.py /hdfs/store/user/<username>/...
+```
 
 ## Addendum: AnalysisDatasetManager
 
