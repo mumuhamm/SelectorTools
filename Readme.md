@@ -83,7 +83,7 @@ The anlaysis code is driven by the script [makeHistFile.py](Utilities/scripts/ma
 
 ### Gen analysis on NanoAOD
 
-The Gen analysis on NanoAOD is based on the class [NanoGenSelector.cc](src/NanoGenSelector.cc). This class reads the variables from a NanoAOD and configures the job. Specific anlayses for W and Z selections are implemented in [ZGenSelector.cc](src/ZGenSelector.cc) and [ZGenSelector.cc](src/WGenSelector.cc). Test commands to run these analyses are
+The Gen analysis on NanoAOD is based on the class [NanoGenSelectorBase.cc](src/NanoGenSelectorBase.cc). This class reads the variables from a NanoAOD and configures the job. Specific anlayses for W and Z selections are implemented in [ZGenSelector.cc](src/ZGenSelector.cc) and [WGenSelector.cc](src/WGenSelector.cc). Test commands to run these analyses are
 
 ```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -a ZGen -s None --input_tier NanoAOD -o testZ.root```
 
