@@ -2,7 +2,7 @@
 #define WZSelector_h
 
 #include <vector>
-#include "Analysis/VVAnalysis/interface/WZSelectorBase.h"
+#include "Analysis/SelectorTools/interface/WZSelectorBase.h"
 #include <TH3.h>
 
 class WZSelector : public WZSelectorBase {

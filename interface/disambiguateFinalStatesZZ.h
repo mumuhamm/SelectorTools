@@ -8,7 +8,7 @@
  *
  * Modified from K. Long, U. Wisconsin
  *
- * https://https://github.com/kdlong/VVAnalysis/blob/master/src/disambiguateFinalStatesZZ.cc
+ * https://https://github.com/kdlong/SelectorTools/blob/master/src/disambiguateFinalStatesZZ.cc
  */
 #ifndef disambiguateFinalStatesZZ_h
 #define disambiguateFinalStatesZZ_h

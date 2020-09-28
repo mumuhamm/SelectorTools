@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/NanoGenSelectorBase.h"
+#include "Analysis/SelectorTools/interface/NanoGenSelectorBase.h"
 #include "PhysicsTools/HepMCCandAlgos/interface/PDFWeightsHelper.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "TParameter.h"

@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/WZSelector.h"
+#include "Analysis/SelectorTools/interface/WZSelector.h"
 #include "TLorentzVector.h"
 
 void WZSelector::Init(TTree *tree)

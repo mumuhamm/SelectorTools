@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/WGenSelector.h"
+#include "Analysis/SelectorTools/interface/WGenSelector.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include <TStyle.h>
 #include <regex>

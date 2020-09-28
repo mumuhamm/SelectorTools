@@ -1,7 +1,7 @@
 #ifndef LowPileupWBackgroundSelector_h
 #define LowPileupWBackgroundSelector_h
 
-#include "Analysis/VVAnalysis/interface/LowPileupWSelector.h"
+#include "Analysis/SelectorTools/interface/LowPileupWSelector.h"
 
 class LowPileupWBackgroundSelector : public LowPileupWSelector {
 public :

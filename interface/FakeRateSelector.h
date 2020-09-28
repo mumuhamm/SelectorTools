@@ -10,7 +10,7 @@
 #include <iostream>
 
 // Headers needed by this particular selector
-#include "Analysis/VVAnalysis/interface/WZSelectorBase.h"
+#include "Analysis/SelectorTools/interface/WZSelectorBase.h"
 #include <vector>
 
 

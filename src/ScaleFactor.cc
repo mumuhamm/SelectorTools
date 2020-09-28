@@ -3,7 +3,7 @@
  * By N. Smith, U. Wisconsin
  * 
  */
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
 #include "TInterpreter.h"
 
 ScaleFactor::~ScaleFactor()

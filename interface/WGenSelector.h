@@ -12,8 +12,8 @@
 
 // Headers needed by this particular selector
 #include <vector>
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
-#include "Analysis/VVAnalysis/interface/NanoGenSelectorBase.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/NanoGenSelectorBase.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 class WGenSelector : public NanoGenSelectorBase {

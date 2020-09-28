@@ -2,8 +2,8 @@
 #define WZBackgroundSelector_h
 
 #include <vector>
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
-#include "Analysis/VVAnalysis/interface/WZSelector.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/WZSelector.h"
 
 class WZBackgroundSelector : public WZSelector {
 public :

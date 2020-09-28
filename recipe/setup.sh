@@ -1,7 +1,7 @@
 #!/bin/bash
 
 dataset_manager=$(./Utilities/scripts/getConfigValue.py dataset_manager_path)/AnalysisDatasetManager
-pushd $CMSSW_BASE/src/Analysis/VVAnalysis/Cuts
+pushd $CMSSW_BASE/src/Analysis/SelectorTools/Cuts
 
 echo "INFO: Linking alias files"
 for folder in $(ls -d */); do
@@ -17,18 +17,22 @@ done
 
 popd
 
-echo "INFO: Downloading scale factor files"
-pushd ScaleFactors
-bash setup.sh
-popd
+analysis=$(./Utilities/scripts/getConfigValue.py analysis)
+if [[ $analysis == WZ ]]; then
+    echo "INFO: Downloading scale factor files"
+    pushd ScaleFactors
+    bash setup.sh
+    popd
+fi
 
-if [ -d PileupWeights ]; then
+if [ -f PileupWeights/calculatePileupCorrections.py ]; then
     echo "INFO: Producing pileup weight distribution files"
     pushd PileupWeights
     bash getDataDistribution.sh
     python calculatePileupCorrections.py
     popd
 else
-    echo "WARNING! PileupWeights repository not found. You should clone with"
+    echo "WARNING! PileupWeights repository not found. You can clone with"
     echo ' --recursive, or run "git submodule update --init" now'
+    echo 'NOTE: Not needed for gen-only studies"
 fi

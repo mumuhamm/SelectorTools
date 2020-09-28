@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/ZZGenSelector.h"
+#include "Analysis/SelectorTools/interface/ZZGenSelector.h"
 #include "TLorentzVector.h"
 #include <boost/algorithm/string.hpp>
 
