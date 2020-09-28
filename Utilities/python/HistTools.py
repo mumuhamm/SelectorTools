@@ -169,7 +169,7 @@ def getTransformed3DMCPDFVarHists(hist3D, transformation, transform_args, entrie
     return makeMCPDFVarHists(hists, hist_name, name, central)
 
 # Calculate standard deviation per bin
-def getSymMCPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+def getSymMCPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName="", scale=1.0):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sMC" % pdfName, rebin)
     upaction = lambda x: numpy.mean(x[1:]) + numpy.std(x[1:], ddof=1)
     downaction = lambda x: numpy.mean(x[1:]) - numpy.std(x[1:], ddof=1)
@@ -178,7 +178,7 @@ def getSymMCPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfNa
             upaction, downaction, central
     )
 
-def makeAllSymHessianHists(hists, hist_name, name, central=0):
+def makeAllSymHessianHists(hists, hist_name, name, central=0, scale=1.0):
     variationSet = []
     for i, hist in enumerate(hists[0:central]+hists[central:]):
         upaction = lambda x: x[1] if x[1] > x[0] else (x[0]**2/x[1] if x[1] > 0 else 0)
@@ -188,30 +188,30 @@ def makeAllSymHessianHists(hists, hist_name, name, central=0):
             hist_name.replace("pdf_%s" % name, "pdf%i" %i), upaction, downaction, central))
     return variationSet
 
-def getAllSymHessianHists(init2D_hist, entries, name, rebin=None, central=0):
+def getAllSymHessianHists(init2D_hist, entries, name, rebin=None, central=0, scale=1.0):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf", rebin)
     return makeAllSymHessianHists(hists, hist_name, name, central)
 
-def getTransformed3DAllSymHessianHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0):
+def getTransformed3DAllSymHessianHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, scale=1.0):
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
     hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf", name+"Up"]))
-    return makeAllSymHessianHists(hists, hist_name, name, central)
+    return makeAllSymHessianHists(hists, hist_name, name, central, scale)
 
-def makeHessianPDFVarHists(hists, hist_name, name, central=0):
+def makeHessianPDFVarHists(hists, hist_name, name, central=0, scale=1.0):
     sumsq = lambda x: math.sqrt(sum([0 if y < 0.01 else ((x[central] - y)**2) for y in x]))
-    upaction = lambda x: x[central] + sumsq(x) 
-    downaction = lambda x: x[central] - sumsq(x) 
+    upaction = lambda x: x[central] + scale*sumsq(x) 
+    downaction = lambda x: x[central] - scale*sumsq(x) 
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central)
 
-def getHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+def getHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName="", scale=1.0):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
-    return makeHessianPDFVarHists(hists, hist_name, name, central)
+    return makeHessianPDFVarHists(hists, hist_name, name, central, scale)
 
-def getTransformed3DHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName=""):
+def getTransformed3DHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName="", scale=1.0):
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
     hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf%sHesUp" % pdfName]))
-    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central, scale)
 
 def getAssymHessianShift(vals, varType):
     pairs = zip(vals[1::2], vals[2::2])
@@ -220,25 +220,26 @@ def getAssymHessianShift(vals, varType):
             [max(0, x[0] - central, x[1] - central) for x in pairs] 
     return math.sqrt(sum([x**2 for x in diffs]))
 
-def makeAssymHessianPDFVarHists(hists, hist_name, name, central=0):
+# Scale = 1/1.645 for 90% --> 68%
+def makeAssymHessianPDFVarHists(hists, hist_name, name, central=0, scale=1.0):
     #centralIndex = central if central != -1 else int(len(entries)/2)
     # From Eq. 3 https://arxiv.org/pdf/1101.0536.pdf
     #sumsqup = lambda x: math.sqrt(sum([max(0, i - x[central], j - x[central])**2 for i,j in zip(x[1::2], x[2::2])]))
     #sumsqdown = lambda x: math.sqrt(sum([max(0, x[central] - i, x[central] - j)**2 for i,j in zip(x[1::2], x[2::2])]))
-    upaction = lambda x: x[central] + getAssymHessianShift(x, "up") 
-    downaction = lambda x: x[central] - getAssymHessianShift(x, "down") 
+    upaction = lambda x: x[central] + scale*getAssymHessianShift(x, "up") 
+    downaction = lambda x: x[central] - scale*getAssymHessianShift(x, "down") 
     return getVariationHists(hists, name, hist_name, 
             upaction, downaction, central
     )
 
-def getAssymHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName=""):
+def getAssymHessianPDFVarHists(init2D_hist, entries, name, rebin=None, central=0, pdfName="", scale=1.0):
     hists, hist_name = getLHEWeightHists(init2D_hist, entries, name, "pdf%sHes" % pdfName, rebin)
-    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central, scale)
 
-def getTransformed3DAssymHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName=""):
+def getTransformed3DAssymHessianPDFVarHists(hist3D, transformation, transform_args, entries, name, rebin=None, central=0, pdfName="", scale=1.0):
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
     hist_name = hist3D.GetName().replace("2D_lheWeights", "_".join(["unrolled", "pdf%sHesUp" % pdfName]))
-    return makeAssymHessianPDFVarHists(hists, hist_name, name, central)
+    return makeAssymHessianPDFVarHists(hists, hist_name, name, central, scale)
 
 def getPDFPercentVariation(values):
     upvar = int(0.84*len(values))
@@ -251,6 +252,7 @@ def getPDFPercentVariation(values):
 def getScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10)], central=0, exclude=[7,9]):
     entries = filter(lambda x: x not in exclude, entries)
     hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
+    map(lambda h: logging.debug("Hist %s has integral %0.2f" % (h.GetName(), h.Integral())), hists)
     return getVariationHists(hists, name, hist_name, lambda x: x[-1], lambda x: x[1], central)
 
 # Pairs should correspond to muR, muF in (0.5, 1) ordered muR, muF, muR+muF
@@ -264,6 +266,7 @@ def makeExpandedScaleHists(hists, hist_name, name, pairs):
 
 # nano ordering is [0] is mur=0.5 muf=0.5 ; [1] is mur=0.5 muf=1 ; [2] is mur=0.5 muf=2 ; [3] is mur=1 muf=0.5 ; 
 # [4] is mur=1 muf=1 ; [5] is mur=1 muf=2 ; [6] is mur=2 muf=0.5 ; [7] is mur=2 muf=1 ; [8] is mur=2 muf=2 *
+# pairs expects muRmuF simultaneous, muR, and muF variation up/down indices
 def getExpandedScaleHists(scale_hist2D, name, rebin=None, entries=range(1,10), pairs=[(1,7), (3,5), (0,8)]):
     hists, hist_name = getLHEWeightHists(scale_hist2D, entries, name, "QCDscale", rebin)
     return makeExpandedScaleHists(hists, hist_name, name, pairs)
@@ -274,6 +277,8 @@ def getVariationHists(hists, process_name, histUp_name, up_action, down_action, 
     histDown = histUp.Clone(histUp_name.replace("Up", "Down"))
     
     histCentral = hists.pop(central).Clone() if central != -1 else None
+    if histCentral:
+        logging.debug("The central index is %s the integral is %0.2f" % (histCentral.GetName(), histCentral.Integral()))
     for i in range(0, histUp.GetNbinsX()+2):
         vals = []
         for hist in hists:
@@ -415,6 +420,7 @@ def makeCompositeHists(hist_file, name, members, lumi, hists=[], underflow=False
                 xsec = members[xseclookup]
                 if sumweights:
                     hist.Scale(xsec*1000*lumi/sumweights)
+                    logging.debug("Scaling hist by %0.4E" % (xsec*1000*lumi/sumweights))
                 elif not isData:
                     hist.Scale(1000*lumi*numpy.sign(xsec))
                     logging.warning("No sumWeights found for dataset %s, scaling only by lumi." % directory)

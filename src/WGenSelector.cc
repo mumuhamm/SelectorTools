@@ -189,12 +189,13 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         return;
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
 
-    if (variation.first == Central)
-        mcWeights_->Fill(weight/std::abs(refWeight));
-
     if (doFiducial_ && lep.pt() < 25)
         return;
     SafeHistFill(histMap1D_, concatenateNames("CutFlow", toAppend), channel_, variation.first, step++, weight);
+
+    if (variation.first == Central)
+        mcWeights_->Fill(weight/std::abs(refWeight));
+
 
     float ptl_smear_fill = ptl_smear;
     if (variation.first == muonScaleUp)
@@ -235,6 +236,7 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
                 thweight = 1;
             }
 
+            thweight = (thweightSuppress_ && std::abs(thweight) < thweightSuppress_) ? thweight : (thweight > 0 ? thweightSuppress_ : -1*thweightSuppress_);
             thweight *= weight;
             SafeHistFill(weighthistMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.mass(), i, thweight);
             SafeHistFill(weighthistMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), i, thweight);

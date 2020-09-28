@@ -45,6 +45,7 @@ public :
 
     int centralWeightIndex_ = 0;
     unsigned int nLeptons_ = 1;
+    static const unsigned int MAX_PDF_SETS = 30;
     static const unsigned int N_LHESCALE_WEIGHTS_ = 1000;
     static const unsigned int N_LHEPDF_WEIGHTS_ = 2000;
     static const unsigned int N_LHEPDFAS_WEIGHTS_ = 102;
@@ -55,6 +56,7 @@ public :
     float GAMMAV_GEN_;
     bool nnlops_ = false;
     int weightSuppress_ = 0;
+    int thweightSuppress_ = 0;
     bool weightSignOnly_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
@@ -78,10 +80,12 @@ public :
     TTreeReader     fReader;
     TTreeReaderValue<Float_t> genWeight = {fReader, "genWeight"};
     
-    UInt_t nLHEScaleWeight = 0;
+    UInt_t nLHEScaleWeight = 1;
     Float_t LHEScaleWeight[N_LHESCALE_WEIGHTS_];
     UInt_t nLHEPdfWeight = 0;
     Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
+    Float_t LHEPdfWeights[MAX_PDF_SETS][N_LHEPDF_WEIGHTS_];
+    std::array<UInt_t, MAX_PDF_SETS> nLHEPdfWeights = {{0}};
     UInt_t nLHEScaleWeightAltSet1 = 0;
     Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
     UInt_t nLHEUnknownWeight = 0;
@@ -89,6 +93,8 @@ public :
     UInt_t nLHEUnknownWeightAltSet1 = 0;
     Float_t LHEUnknownWeightAltSet1[100];
 
+    std::array<TBranch*, MAX_PDF_SETS> b_nLHEPdfWeights;
+    std::array<TBranch*, MAX_PDF_SETS> b_LHEPdfWeights;
     TBranch* b_nLHEPdfWeight;
     TBranch* b_LHEPdfWeight;
     TBranch* b_nLHEScaleWeightAltSet1;
@@ -100,7 +106,7 @@ public :
 
     bool scaleWeights_ = false;
     bool altScaleWeights_ = false;
-    bool pdfWeights_ = false;
+    std::array<bool, MAX_PDF_SETS> pdfWeights_ = {{false}};
     bool unknownWeights_ = false;
     bool unknownWeightsAlt_ = false;
 

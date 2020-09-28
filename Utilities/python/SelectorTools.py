@@ -48,6 +48,7 @@ class SelectorDriver(object):
         self.datasets = {}
         self.regions = {}
         self.maxEntries = -1
+        self.nProcessed = 0
 
     # Needed to parallelize class member function, see
     # https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map
@@ -163,6 +164,9 @@ class SelectorDriver(object):
         for dataset in datasets:
             if "@" in dataset:
                 dataset, file_path = [f.strip() for f in dataset.split("@")]
+            elif ".root" in dataset[-5:]:
+                file_path = dataset
+                dataset = "Unknown"
             else:
                 try:
                     file_path = ConfigureJobs.getInputFilesPath(dataset, self.input_tier, analysis)
@@ -307,8 +311,12 @@ class SelectorDriver(object):
         filenames = []
         for entry in file_path:
             filenames.extend(self.getFileNames(entry))
+
         for i, filename in enumerate(filenames):
-            self.processFile(selector, filename, addSumweights, chan, i+1)
+            self.nProcessed += self.processFile(selector, filename, addSumweights, chan, i+1)
+            print "processed %i events after %i files" % (self.nProcessed, i+1)
+            if self.maxEntries > 0 and self.nProcessed >= self.maxEntries:
+                break
                 
     def processFile(self, selector, filename, addSumweights, chan, filenum=1):
         rtfile = ROOT.TFile.Open(filename)
@@ -322,15 +330,18 @@ class SelectorDriver(object):
                 % (tree_name, filename, self.ntupleType)
             )
         logging.debug("Processing tree %s for file %s." % (tree.GetName(), rtfile.GetName()))
-        if self.maxEntries and self.maxEntries > 0:
-            tree.Process(selector, "", self.maxEntries)
+        toprocess = self.maxEntries-self.nProcessed
+        if toprocess > 0:
+            tree.Process(selector, "", toprocess)
         else:
             tree.Process(selector, "")
         logging.debug("Processed file %s with selector %s." % (filename, selector.GetName()))
         if addSumweights:
             self.fillSumweightsHist(rtfile, filenum)
             logging.debug("Added sumweights hist.")
+        entries = min(tree.GetEntries(), toprocess) if toprocess > 0 else tree.GetEntries()
         rtfile.Close()
+        return entries
 
     # You can use filenum to index the files and sum separately, but it's not necessary
     def fillSumweightsHist(self, rtfile, filenum=1):

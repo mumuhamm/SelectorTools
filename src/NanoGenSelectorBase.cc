@@ -14,14 +14,16 @@ void NanoGenSelectorBase::Init(TTree *tree)
     weightSignOnly_ = wSignOnly != nullptr && wSignOnly->GetVal();
     TParameter<int>* wSuppress = (TParameter<int>*) GetInputList()->FindObject("wSuppress");
     weightSuppress_ = wSuppress != nullptr ? wSuppress->GetVal() : 0;
+    TParameter<int>* thwSuppress = (TParameter<int>*) GetInputList()->FindObject("thwSuppress");
+    thweightSuppress_ = thwSuppress != nullptr ? thwSuppress->GetVal() : 0;
 
     if (doTheoryVars_) {
         theoryVarSysts_.insert(theoryVarSysts_.begin(), Central);
         theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
-        theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
         theoryVarSysts_.insert(theoryVarSysts_.end(), PreFSRLeptons);
-        theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVUp);
-        theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVDown);
+        //theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
+        //theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVUp);
+        //theoryVarSysts_.insert(theoryVarSysts_.end(), mZShift100MeVDown);
     }
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");
@@ -65,14 +67,22 @@ void NanoGenSelectorBase::Init(TTree *tree)
     altScaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeightAltSet1") != nullptr);
     unknownWeights_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeight") != nullptr);
     unknownWeightsAlt_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeightAltSet1") != nullptr);
-    pdfWeights_ = (tree->GetListOfBranches()->FindObject("nLHEPdfWeight") != nullptr);
+    
+    for (size_t i = 0; i < pdfWeights_.size(); i++) {
+        std::string name = "LHEPdfWeight";
+        if (i > 0)
+            name += "AltSet" + std::to_string(i);
+        if(tree->GetListOfBranches()->FindObject(name.c_str()) == nullptr)
+            break;
+        pdfWeights_.at(i) = true;
+    }
 
     SelectorBase::Init(tree);
 
-    edm::FileInPath mc2hessianCSV("PhysicsTools/HepMCCandAlgos/data/NNPDF30_lo_as_0130_hessian_60.csv");
     // Off for now
-    doMC2H_ = name_.find("cp5") == std::string::npos && false;
+    doMC2H_ = false && name_.find("cp5") == std::string::npos;
     if (doMC2H_) {
+        edm::FileInPath mc2hessianCSV("PhysicsTools/HepMCCandAlgos/data/NNPDF30_lo_as_0130_hessian_60.csv");
         std::cout << "INFO: Will convert MC PDF set to Hessian with MC2Hessian\n";
         pdfweightshelper_.Init(N_LHEPDF_WEIGHTS_, N_MC2HESSIAN_WEIGHTS_, mc2hessianCSV);
     }
@@ -110,9 +120,14 @@ void NanoGenSelectorBase::SetBranchesNanoAOD() {
         b.SetSpecificBranch("nLHEScaleWeightAltSet1", nLHEScaleWeightAltSet1);
         b.SetSpecificBranch("LHEScaleWeightAltSet1", LHEScaleWeightAltSet1);
     }
-    if (pdfWeights_) {
-        b.SetSpecificBranch("nLHEPdfWeight", nLHEPdfWeight);
-        b.SetSpecificBranch("LHEPdfWeight", LHEPdfWeight);
+    for (size_t i = 0; i < pdfWeights_.size(); i++) {
+        if (pdfWeights_.at(i)) {
+            std::string name = "LHEPdfWeight";
+            if (i > 0)
+                name += "AltSet" + std::to_string(i);
+            b.SetSpecificBranch("n"+name, nLHEPdfWeights.at(i));
+            b.SetSpecificBranch(name, LHEPdfWeights[i]);
+        }
     }
     if (unknownWeights_) {
         b.SetSpecificBranch("nLHEUnknownWeight", nLHEUnknownWeight);
@@ -134,9 +149,14 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         b.SetSpecificEntry(entry, "nLHEScaleWeightAltSet1");
         b.SetSpecificEntry(entry, "LHEScaleWeightAltSet1");
     }
-    if (pdfWeights_) {
-        b.SetSpecificEntry(entry, "LHEPdfWeight");
-        b.SetSpecificEntry(entry, "nLHEPdfWeight");
+    for (size_t i = 0; i < pdfWeights_.size(); i++) {
+        if (pdfWeights_.at(i)) {
+            std::string name = "LHEPdfWeight";
+            if (i > 0)
+                name += "AltSet" + std::to_string(i);
+            b.SetSpecificEntry(entry, name);
+            b.SetSpecificEntry(entry, "n"+name);
+        }
     }
     if (unknownWeights_) {
         b.SetSpecificEntry(entry, "LHEUnknownWeight");
@@ -151,8 +171,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         nLHEScaleWeight = 0;
     if (!altScaleWeights_)
         nLHEScaleWeightAltSet1 = 0;
-    if (!pdfWeights_)
-        nLHEPdfWeight = 0;
+    if (!pdfWeights_.at(0))
+        nLHEPdfWeight = {0};
     if (!unknownWeights_)
         nLHEUnknownWeight = 0;
     if (!unknownWeightsAlt_)
@@ -335,8 +355,8 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
 
     weight = *genWeight;       
     if (weightSignOnly_)
-        weight /= std::abs(*genWeight);
-    // The don't really work together
+        weight = *genWeight > 0 ? 1 : -1;
+    // These options don't really work together
     else if (weightSuppress_ && std::abs(*genWeight) > weightSuppress_) {
         weight = 0;
         *genWeight = 0;

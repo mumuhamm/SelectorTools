@@ -306,7 +306,8 @@ class CombineCardTools(object):
                         pdfType = "Hessian" if "assym" not in pdfVar['combine'] else "AssymHessian"
 
                     pdfFunction = "get%sPDFVarHists" % pdfType 
-                    args = [weightHist, pdfVar['entries'], processName, self.rebin, pdfVar['central'], pdfVar['name']]
+                    pdfUncScale = (1.0/1.645) if "CT18" in pdfVar['name'] else 1.0
+                    args = [weightHist, pdfVar['entries'], processName, self.rebin, pdfVar['central'], pdfVar['name'], pdfUncScale]
                     if self.isUnrolledFit:
                         pdfFunction = pdfFunction.replace("get", "getTransformed3D")
                         args = args[0:1] + [HistTools.makeUnrolledHist, [self.unrolledBinsX, self.unrolledBinsY]] + args[1:]

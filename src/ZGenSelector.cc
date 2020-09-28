@@ -2,6 +2,7 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include <TStyle.h>
 #include <regex>
+#include <numeric>
 
 void ZGenSelector::Init(TTree *tree)
 {
@@ -63,7 +64,7 @@ void ZGenSelector::Init(TTree *tree)
     NanoGenSelectorBase::Init(tree);
 }
 
-void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) { 
+void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) {
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
 
     if (variation.first == Central)
@@ -159,14 +160,27 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
         mcWeights_->Fill(weight/std::abs(refWeight));
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+        size_t nScaleWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1;
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
-        size_t nWeights = variation.first == Central ? minimalWeights+nLHEPdfWeight : minimalWeights;
+        size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 1);
+
+        //size_t nWeights = variation.first == Central ? minimalWeights+allPdfWeights : minimalWeights;
+        size_t nWeights = minimalWeights+allPdfWeights;
+        size_t pdfOffset = nScaleWeights;
+        size_t pdfIdx = 0;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < nLHEScaleWeight)
                 thweight = LHEScaleWeight[i];
-            else if (i < nLHEScaleWeight+nLHEScaleWeightAltSet1)
+            else if (i < nScaleWeights)
                 thweight = LHEScaleWeightAltSet1[i-nLHEScaleWeight];
+            else if (i < nScaleWeights+allPdfWeights) {
+                thweight = LHEPdfWeights[pdfIdx][i-pdfOffset];
+                if (i == pdfOffset+nLHEPdfWeights.at(pdfIdx)-1) {
+                    pdfOffset += nLHEPdfWeights.at(pdfIdx++);
+                }
+            }
+            //TODO: This is broken
             else if (i < minimalWeights-nLHEUnknownWeightAltSet1)
                 thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1];
             else if (i < minimalWeights)
