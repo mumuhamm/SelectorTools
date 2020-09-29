@@ -13,11 +13,14 @@ import tarfile
 import math
 import re
 import subprocess
+import logging
 
 def getComLineArgs():
     parser = UserInput.getDefaultParser(False)
     parser.add_argument("-d", "--submit_dir", type=str,
                         required=True, help="Output directory")
+    parser.add_argument("--debug", action='store_true',
+        help="Print verbose info")
     parser.add_argument("-n", "--files_per_job", type=int,
                         default=3, help="Number of files per job")
     parser.add_argument("--submit", action='store_true',
@@ -205,6 +208,7 @@ def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tie
 
 def main():
     args = getComLineArgs()
+    logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.INFO))
     submitDASFilesToCondor(args['filenames'], args['submit_dir'], args['analysis'], 
         args['selection'], args['input_tier'], args['queue'], args['files_per_job'], args['force'], 
         not args['local'], args['selectorArgs'], args['merge'], args['removeUnmerged'])
