@@ -83,11 +83,19 @@ The anlaysis code is driven by the script [makeHistFile.py](Utilities/scripts/ma
 
 ### Gen analysis on NanoAOD
 
-The Gen analysis on NanoAOD is based on the class [NanoGenSelectorBase.cc](src/NanoGenSelectorBase.cc). This class reads the variables from a NanoAOD and configures the job. Specific anlayses for W and Z selections are implemented in [ZGenSelector.cc](src/ZGenSelector.cc) and [WGenSelector.cc](src/WGenSelector.cc). Test commands to run these analyses are
+The Gen analysis on NanoAOD is based on the class [NanoGenSelectorBase.cc](src/NanoGenSelectorBase.cc). This class reads the variables from a NanoAOD and configures the job. Specific anlayses for W and Z selections are implemented in [ZGenSelector.cc](src/ZGenSelector.cc) and [WGenSelector.cc](src/WGenSelector.cc). You will need the [AnalysisDatasetManager repository](https://github.com/kdlong/AnalysisDatasetManager) to define the histogram binning. If you are only running the W and Z analyses, you can clone it using the sparse checkout step
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/kdlong/AnalysisDatasetManager/master/SparseCheckouts/sparseCheckout.sh) VGenSparse.config
+```
+
+You should then put the path to this repo in your Templates/user.config file inside the SelectorTools repository.
+
+Test commands to run these analyses are
 
 ```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/ZJToMuMu_mWPilot_TuneCP5_13TeV-powheg-MiNNLO-pythia8-photos/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/10000/AC80C98C-F0A6-7443-8DD3-68F5D09F0CAE.root -a ZGen -s None --input_tier NanoAOD -o testZ.root```
 
-```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/260000/AFEFB52A-AB45-334A-AFBD-C2FD0D28F3D6.root -a WGen -s None --input_tier NanoAOD -o testZ.root```
+```./Utilities/scripts/makeHistFile.py -f /store/mc/RunIISummer16NanoAODv7/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/260000/AFEFB52A-AB45-334A-AFBD-C2FD0D28F3D6.root -a WGen -s None --input_tier NanoAOD -o testW.root```
 
 Try these commands out and take a look at the output files (testZ.root and testW.root). Many histograms should be produced inside the main folder, which is name "Unknown," because you haven't specified a name. You can browse using the TBrowser, for example. You can specify a name for your folder using name@path, for example, to name the folder ZMiNNLO:
 
@@ -132,7 +140,19 @@ So, if you want to run a basic analysis, you could write:
 ```
 So this corresponds to running the ZSelector over the events in the dy and data_2016 files that were skimmed with NanoDileptonSkims and analyzed to TightWithLooseVeto. The Luminosity is 35.9 and we are ignoring data driven backgrounds (--test)
 
+## Running parallel local analysis
+
+Parallel mode currently only supports parallelizing by dataset. That is, each dataset will spawn a new process in python. This is activated by using the ```--j <num_cores>``` option to makeHistFile.py. It is not supported to parallelize locally by file, for this, using condor is suggested.
+
 ## Running anlaysis on condor
+
+You can farm out the processing of individual files from a data set using the script [submitMakeHistFileToCondor.py](Utilities/scripts/submitMakeHistFileToCondor.py). Run ```./Utilities/scripts/submitMakeHistFileToCondor.py --help``` to see options for this script. 
+
+An example command for the ZGen analysis is
+
+```
+./Utilities/scripts/submitMakeHistFileToCondor.py -f DYm50 -a ZGen -s None --input_tier NanoAOD -d ~/work/Submit_DYtest -n 1 -q longlunch --removeUnmerged --merge ~/work/Submit_DYtest/DYtest.root 0.9 --selectorArgs theoryUnc=1 --submit
+```
 
 ### Implementing your own selector
 
