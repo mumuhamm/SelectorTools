@@ -89,7 +89,7 @@ def copyLibs():
         shutil.rmtree(libdir)
     os.mkdir(libdir)
     
-    cmssw_libdir = "/".join([os.environ["CMSSW_BASE"], libdir, os.environ["SCRAM_ARCH"], "*VVAnalysis*"])
+    cmssw_libdir = "/".join([os.environ["CMSSW_BASE"], libdir, os.environ["SCRAM_ARCH"], "*SelectorTools*"])
     for i in glob.glob(cmssw_libdir):
         shutil.copyfile(i, '/'.join([libdir, os.path.basename(i)]))
 
