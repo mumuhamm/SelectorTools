@@ -45,6 +45,8 @@ git clone git@github.com:<username>/AnalysisDatasetManager.git
 ```
 
 You should create a new configuration file following the example [here](../master/Templates/config.kdlong) to have settings specific to you. Use the name config.<username>.
+	
+NOTE: Everytime you run the code, you need to be in this CMS environment, that is, run ```cmsenv``` from the CMSSW_X_Y_Z/src directory where the package is installed.
 
 # Overview
 -----------
