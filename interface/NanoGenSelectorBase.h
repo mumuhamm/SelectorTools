@@ -31,42 +31,84 @@ public :
     reco::GenParticleCollection dressedLeptons;
     reco::GenParticleCollection bornLeptons;
     reco::GenParticleCollection lheLeptons;
+    reco::GenParticleCollection preFSRLeptons;
     reco::GenParticleCollection bornNeutrinos;
     reco::GenParticleCollection lheNeutrinos;
+    reco::GenParticleCollection preFSRNeutrinos;
     reco::GenParticleCollection fsneutrinos;
     reco::GenParticleCollection neutrinos;
     reco::GenParticleCollection photons;
     std::vector<LorentzVector> jets;
+    std::vector<LorentzVector> genjets;
+    std::vector<LorentzVector> lhejets;
     LorentzVector genMet;
 
+    int centralWeightIndex_ = 0;
     unsigned int nLeptons_ = 1;
-    static const unsigned int N_LHESCALE_WEIGHTS_ = 10;
-    static const unsigned int N_LHEPDF_WEIGHTS_ = 100;
+    static const unsigned int MAX_PDF_SETS = 30;
+    static const unsigned int N_LHESCALE_WEIGHTS_ = 1000;
+    static const unsigned int N_LHEPDF_WEIGHTS_ = 2000;
     static const unsigned int N_LHEPDFAS_WEIGHTS_ = 102;
     static const unsigned int N_MC2HESSIAN_WEIGHTS_ = 60;
     float weight;
+    float mVlhe;
+    float MV_GEN_;
+    float GAMMAV_GEN_;
     bool nnlops_ = false;
+    int weightSuppress_ = 0;
+    int thweightSuppress_ = 0;
+    bool weightSignOnly_ = false;
     bool doTheoryVars_ = false;
     bool doMC2H_ = false;
-    bool doBareLeptons_ = true;
-    bool doBorn_ = false;
-    bool doLHE_ = true;
     bool doPhotons_ = true;
-    bool doNeutrinos_ = true;
-    bool doFiducial_ = true;
+    bool nNeutrinos_ = 0;
+    bool doFiducial_ = false;
+    bool doBorn_ = true;
+    bool doLHE_ = true;
+    bool doPreFSR_ = true;
+    bool doBareLeptons_ = true;
 
+    float refWeight = 1;
+
+    TH1D* mcWeights_;
     TH1D* mcPdfWeights_;
     TH1D* hesPdfWeights_;
-    TH1D* scaleWeights_;
+    TH1D* scaleWeightsHist_;
     
     double LHEHessianPdfWeight[N_MC2HESSIAN_WEIGHTS_];
     // Values read from file
     TTreeReader     fReader;
     TTreeReaderValue<Float_t> genWeight = {fReader, "genWeight"};
-    TTreeReaderValue<UInt_t> nLHEScaleWeight = {fReader, "nLHEScaleWeight"};
-    TTreeReaderValue<UInt_t> nLHEPdfWeight = {fReader, "nLHEPdfWeight"};
-    TTreeReaderArray<Float_t> LHEScaleWeight = {fReader, "LHEScaleWeight"};
-    TTreeReaderArray<Float_t> LHEPdfWeight = {fReader, "LHEPdfWeight"};
+    
+    UInt_t nLHEScaleWeight = 1;
+    Float_t LHEScaleWeight[N_LHESCALE_WEIGHTS_];
+    UInt_t nLHEPdfWeight = 0;
+    Float_t LHEPdfWeight[N_LHEPDF_WEIGHTS_];
+    Float_t LHEPdfWeights[MAX_PDF_SETS][N_LHEPDF_WEIGHTS_];
+    std::array<UInt_t, MAX_PDF_SETS> nLHEPdfWeights = {{0}};
+    UInt_t nLHEScaleWeightAltSet1 = 0;
+    Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
+    UInt_t nLHEUnknownWeight = 0;
+    Float_t LHEUnknownWeight[100];
+    UInt_t nLHEUnknownWeightAltSet1 = 0;
+    Float_t LHEUnknownWeightAltSet1[100];
+
+    std::array<TBranch*, MAX_PDF_SETS> b_nLHEPdfWeights;
+    std::array<TBranch*, MAX_PDF_SETS> b_LHEPdfWeights;
+    TBranch* b_nLHEPdfWeight;
+    TBranch* b_LHEPdfWeight;
+    TBranch* b_nLHEScaleWeightAltSet1;
+    TBranch* b_LHEScaleWeightAltSet1;
+    TBranch* b_nLHEUnknownWeight;
+    TBranch* b_LHEUnknownWeight;
+    TBranch* b_nLHEUnknownWeightAltSet1;
+    TBranch* b_LHEUnknownWeightAltSet1;
+
+    bool scaleWeights_ = false;
+    bool altScaleWeights_ = false;
+    std::array<bool, MAX_PDF_SETS> pdfWeights_ = {{false}};
+    bool unknownWeights_ = false;
+    bool unknownWeightsAlt_ = false;
 
     TTreeReaderValue<UInt_t> nGenDressedLepton = {fReader, "nGenDressedLepton"};
     TTreeReaderArray<Bool_t> GenDressedLepton_hasTauAnc = {fReader, "GenDressedLepton_hasTauAnc"};
@@ -99,6 +141,7 @@ public :
     TTreeReaderValue<Float_t> MET_fiducialGenPt = {fReader, "MET_fiducialGenPt"};
     TTreeReaderValue<Float_t> MET_fiducialGenPhi = {fReader, "MET_fiducialGenPhi"};
     float ht;
+    float ptVlhe;
     
     BranchManager b;
     
@@ -118,6 +161,7 @@ protected:
     bool overlapsCollection(const LorentzVector& cand, reco::GenParticleCollection& collection, const float deltaRCut, size_t maxCompare);
     void buildHessian2MCSet();
     reco::GenParticle makeGenParticle(int pdgid, int status, float pt, float eta, float phi, float m);
+    double breitWignerWeight(double offset);
 };
 
 #endif

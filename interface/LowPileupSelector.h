@@ -28,15 +28,12 @@ public :
     bool isZ_ = false;
     bool isE_;
 
+    TLorentzVector* genV = nullptr;
+    TBranch* b_genV = nullptr;
+
     Float_t pfMet;
     Float_t pfMetPhi;
-    Float_t genVPt;
-    Float_t genVPhi;
-    Float_t genVy;
-    Float_t genVMass;
     Float_t scale1fb;
-
-    BranchManager b;
 
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;

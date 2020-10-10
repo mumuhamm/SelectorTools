@@ -48,6 +48,7 @@ class SelectorDriver(object):
         self.datasets = {}
         self.regions = {}
         self.maxEntries = -1
+        self.nProcessed = 0
 
     # Needed to parallelize class member function, see
     # https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map
@@ -163,6 +164,9 @@ class SelectorDriver(object):
         for dataset in datasets:
             if "@" in dataset:
                 dataset, file_path = [f.strip() for f in dataset.split("@")]
+            elif ".root" in dataset[-5:]:
+                file_path = dataset
+                dataset = "Unknown"
             else:
                 try:
                     file_path = ConfigureJobs.getInputFilesPath(dataset, self.input_tier, analysis)
@@ -201,17 +205,21 @@ class SelectorDriver(object):
         # Only add for one channel
         addSumweights = self.addSumweights and self.channels.index(chan) == 0 and "data" not in dataset
         if addSumweights:
-            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
             # Avoid accidentally combining sumweights across datasets
+            currfile_name = self.current_file.GetName()
+            self.current_file.Close()
+            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
             if sumweights_hist:
-                del sumweights_hist
+                sumweights_hist.Delete()
             if not self.outfile:
                 self.outfile = ROOT.TFile.Open(self.outfile_name)
             sumweights_hist = self.outfile.Get("%s/sumweights" % dataset)
             
             if not sumweights_hist:
-                sumweights_hist = ROOT.TH1D("sumweights", "sumweights", 100, 0, 100)
+                sumweights_hist = ROOT.TH1D("sumweights", "sumweights", 1000, 0, 1000)
             sumweights_hist.SetDirectory(ROOT.gROOT)
+            if currfile_name:
+                self.current_file = ROOT.TFile.Open(currfile_name, "update")
         self.processLocalFiles(select, file_path, addSumweights, chan)
 
         output_list = select.GetOutputList()
@@ -230,6 +238,8 @@ class SelectorDriver(object):
             self.outfile.Close()
             chanNum = self.channels.index(chan)
             self.current_file = ROOT.TFile.Open(self.tempfileName(dataset), "recreate" if chanNum == 0 else "update")
+        if not self.current_file:
+            self.current_file = ROOT.TFile.Open(self.outfile_name)
 
         for process in processes:
             dataset_list = output_list.FindObject(process)
@@ -243,9 +253,11 @@ class SelectorDriver(object):
                     return False
             if addSumweights:
                 if not sumweights_hist:
-                    logging.warning("Failed to find sumweights for dataset %s" % dataset)
-                dataset_list.Add(sumweights_hist)
+                    logging.warning("Failed to find sumweights for process %s" % process)
+                else:
+                    dataset_list.Add(sumweights_hist.Clone())
             OutputTools.writeOutputListItem(dataset_list, self.current_file)
+            map(lambda x: x.Delete(), dataset_list)
             del dataset_list
         del output_list
 
@@ -299,8 +311,12 @@ class SelectorDriver(object):
         filenames = []
         for entry in file_path:
             filenames.extend(self.getFileNames(entry))
+
         for i, filename in enumerate(filenames):
-            self.processFile(selector, filename, addSumweights, chan, i+1)
+            self.nProcessed += self.processFile(selector, filename, addSumweights, chan, i+1)
+            print "processed %i events after %i files" % (self.nProcessed, i+1)
+            if self.maxEntries > 0 and self.nProcessed >= self.maxEntries:
+                break
                 
     def processFile(self, selector, filename, addSumweights, chan, filenum=1):
         rtfile = ROOT.TFile.Open(filename)
@@ -314,19 +330,26 @@ class SelectorDriver(object):
                 % (tree_name, filename, self.ntupleType)
             )
         logging.debug("Processing tree %s for file %s." % (tree.GetName(), rtfile.GetName()))
-        if self.maxEntries and self.maxEntries > 0:
-            tree.Process(selector, "", self.maxEntries)
+        toprocess = self.maxEntries-self.nProcessed
+        if toprocess > 0:
+            tree.Process(selector, "", toprocess)
         else:
             tree.Process(selector, "")
         logging.debug("Processed file %s with selector %s." % (filename, selector.GetName()))
         if addSumweights:
             self.fillSumweightsHist(rtfile, filenum)
             logging.debug("Added sumweights hist.")
+        entries = min(tree.GetEntries(), toprocess) if toprocess > 0 else tree.GetEntries()
         rtfile.Close()
+        return entries
 
     # You can use filenum to index the files and sum separately, but it's not necessary
     def fillSumweightsHist(self, rtfile, filenum=1):
         sumWeightsType = "fromTree"
+        weightSignOnly = filter(lambda x: "wSignOnly" in x.GetName(), self.inputs)
+        wSuppress = filter(lambda x: "wSuppress" in x.GetName(), self.inputs)
+        weightSignOnly = weightSignOnly[0].GetVal() if weightSignOnly else False
+        wSuppress = wSuppress[0].GetVal() if wSuppress else 0
 
         if self.ntupleType == "NanoAOD":
             nevents_branch = "genEventCount"
@@ -335,6 +358,9 @@ class SelectorDriver(object):
             if not rtfile.Get(meta_tree_name).GetBranch(sumweights_branch):
                 sumweights_branch += "_"
                 nevents_branch += "_"
+            if weightSignOnly or wSuppress:
+                meta_tree_name = "Events"
+                sumweights_branch = "genWeight" 
         elif self.ntupleType == "Bacon":
             sumWeightsType = "fromHist"
             weightshist_name = "hGenWeights"
@@ -343,24 +369,29 @@ class SelectorDriver(object):
             sumweights_branch = "summedWeights"
             meta_tree_name = "metaInfo/metaInfo"
 
+        ROOT.gROOT.cd()
+        sumweights_hist = ROOT.gROOT.FindObject("sumweights")
         if sumWeightsType == "fromTree":
             meta_tree = rtfile.Get(meta_tree_name)
-            ROOT.gROOT.cd()
-            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
             tmplabel = sumweights_hist.GetName()+"_i"
             tmpweights_hist = sumweights_hist.Clone(tmplabel)
+
             draw_weight = sumweights_branch 
+            if weightSignOnly:
+                draw_weight = "(%s > 0 ? 1 : -1)" % draw_weight
+            if wSuppress:
+                draw_weight = "%s*(%s < %s)" % (draw_weight, sumweights_branch, wSuppress)
             if self.maxEntries and self.maxEntries > 0:
                 logging.warning("maxEntries is a subset of all the events in the file." \
                     " The sumweights hist will be scaled to reflect this, but this is NOT exact!")
                 draw_weight += "*%i/%s" % (self.maxEntries, nevents_branch)
+
             meta_tree.Draw("%i>>%s" % (filenum, tmplabel), draw_weight)
             sumweights_hist.Add(tmpweights_hist)
         elif sumWeightsType == "fromHist":
-            ROOT.gROOT.cd()
-            sumweights_hist = ROOT.gROOT.FindObject("sumweights")
-            new_sumweights_hist = rtfile.Get("hGenWeights")
+            new_sumweights_hist = rtfile.Get(weightshist_name)
             if sumweights_hist and new_sumweights_hist:
                 sumweights_hist.Add(new_sumweights_hist)
                 sumweights_hist.SetDirectory(ROOT.gROOT)
                 ROOT.SetOwnership(sumweights_hist, False)
+        logging.debug("Sumweights is %0.2f" % sumweights_hist.Integral())

@@ -15,14 +15,14 @@ void LowPileupZSelector::SetBranchesBacon() {
     channelName_ = "mm";
     lep1 = nullptr;
     lep2 = nullptr;
-    b.SetBranch("category", category);
-    b.SetBranch("met", pfMet);
-    b.SetBranch("metPhi", pfMetPhi);
+    fChain->SetBranchAddress("category", &category, &category_b);
+    //fChain->SetBranchAddress("met", &pfMet, &b_pfMet);
+    //fChain->SetBranchAddress("metPhi", &pfMetPhi, &b_pfMetPhi);
     fChain->SetBranchAddress("lep1", &lep1, &lep1_b);
     fChain->SetBranchAddress("lep2", &lep2, &lep2_b);
     if (isMC_) {
-        b.SetBranch("genWeight", genWeight);
-        b.SetBranch("PUWeight", PUWeight);
+        //b.SetBranch("genWeight", genWeight);
+        //b.SetBranch("PUWeight", PUWeight);
     }
     LowPileupSelector::SetBranchesBacon();
 }
@@ -30,6 +30,7 @@ void LowPileupZSelector::SetBranchesBacon() {
 void LowPileupZSelector::LoadBranchesBacon(Long64_t entry, std::pair<Systematic, std::string> variation) { 
     lep1_b->GetEntry(entry);
     lep2_b->GetEntry(entry);
+    category_b->GetEntry(entry);
     LowPileupSelector::LoadBranchesBacon(entry, variation);
 }
 

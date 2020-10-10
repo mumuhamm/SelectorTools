@@ -1,4 +1,5 @@
 from python import HistTools, OutputTools, ConfigureJobs
+weight id='1950'> lhapdf=263000 </weight>
 import ROOT
 import argparse
 import json

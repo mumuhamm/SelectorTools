@@ -17,21 +17,41 @@ class CombineCardTools(object):
         self.crossSectionMap = {}
         self.outputFile = ""
         self.templateName = ""
+        self.correlateScaleUnc = False
         self.channels = []
         self.variations = {}
+        self.perbinVariations = {}
         self.rebin = None
         self.isMC = True
         self.isUnrolledFit = False
+        self.removeZeros = True
         self.lumi = 1
         self.outputFolder = "."
         self.channelsToCombine = {}
         self.theoryVariations = {}
+        self.extraCardVars = ""
+        self.cardGroups = ""
+        self.addOverflow = False
 
     def setPlotGroups(self, xsecMap):
         self.crossSectionMap = xsecMap
 
     def setRebin(self, rebin):
         self.rebin = rebin
+
+    def setAddOverflow(self, overflow):
+        self.addOverflow = overflow
+
+    def setCorrelateScaleUnc(self, correlate):
+        self.correlateScaleUnc = correlate
+
+    def setRemoveZeros(self, removeZeros):
+        self.removeZeros = removeZeros
+
+    def setUnrolled(self, binsx, binsy):
+        self.isUnrolledFit = True
+        self.unrolledBinsX = binsx
+        self.unrolledBinsY = binsy
 
     def setCrosSectionMap(self, xsecMap):
         self.crossSectionMap = xsecMap
@@ -68,8 +88,11 @@ class CombineCardTools(object):
             variations = [x+y for x in variations for y in ["Up", "Down"]]
         self.variations[process] = variations
 
-    def weightHistName(self, channel, process):
+    def weightHistName(self, channel, process, append=""):
         fitVariable = self.getFitVariable(process)
+        if append != "":
+            # Removing LHE is just a hack for now!
+            fitVariable = fitVariable + "_" + append
         variable = fitVariable.replace("unrolled", "2D") if self.isUnrolledFit else fitVariable
         return "_".join([variable, "lheWeights", channel])
 
@@ -80,6 +103,42 @@ class CombineCardTools(object):
         self.outputFolder = outputFolder
         if not os.path.isdir(outputFolder):
             os.makedirs(outputFolder)
+
+    def setScaleVarGroups(self, processName, groups):
+        if processName not in self.theoryVariations or 'scale' not in self.theoryVariations[processName]:
+            raise ValueError("Cannot define variation groups before scale is defined for process")
+        self.theoryVariations[processName]['scale']['groups'] = groups
+
+    def addPerBinVariation(self, processName, varName, variation, correlate=True):
+        if processName not in self.perbinVariations:
+            self.perbinVariations[processName] = []
+        self.perbinVariations[processName].append((varName, variation, correlate))
+
+    def perBinVariationHists(self, hist, varName, var, correlation, addToCard=False):
+        varUpRef = hist.Clone(hist.GetName().replace(self.fitVariable, '_'.join([self.fitVariable, varName+"Up"])))
+        varDownRef = varUpRef.Clone(varUpRef.GetName().replace("Up", "Down"))
+
+        varHists = []
+        # TODO: this needs to be made more general
+        if correlation and addToCard:
+            self.extraCardVars += "%s    shape   1\n" % varName
+        for i in range(1, hist.GetNbinsX()+1):
+            if not correlation:
+                varUp = varUpRef.Clone(varUpRef.GetName().replace(varName, varName+str(i)))
+                varDown = varDownRef.Clone(varDownRef.GetName().replace(varName, varName+str(i)))
+                self.extraCardVars += "%s%i    shape   1\n" % (varName, i)
+            else:
+                varUp = varUpRef
+                varDown = varDownRef
+
+            varUp.SetBinContent(i, (1.+var)*hist.GetBinContent(i))
+            varUp.SetBinError(i, (1.+var)*hist.GetBinError(i))
+            varDown.SetBinContent(i, 1/(1.+var)*hist.GetBinContent(i))
+            varDown.SetBinError(i, 1/(1.+var)*hist.GetBinError(i))
+            if i == 0 or not correlation:
+                varHists.extend([varUp, varDown])
+                
+        return varHists
 
     def addTheoryVar(self, processName, varName, entries, central=0, exclude=[], specName=""):
         if "scale" not in varName.lower() and "pdf" not in varName.lower():
@@ -94,9 +153,21 @@ class CombineCardTools(object):
                 "entries" : entries,
                 "central" : central,
                 "exclude" : exclude,
+                "groups" : [(3,6), (1,2), (4,8)],
                 "combine" : "envelope" if name == "scale" else varName.replace("pdf_", ""),
             }
         })
+
+    def addScaleBasedVar(self, processName, variation):
+        if 'scale' not in self.theoryVariations[processName]:
+            raise ValueError("Scale variations not defined for process %s." % processName \
+                                + " Can't add additional variation." % procesName)
+
+        scaleVars = self.theoryVariations[processName]['scale']
+        if 'theoryBasedVars' not in scaleVars:
+            scaleVars['theoryBasedVars'] = [variation]
+        else:
+            scaleVars['theoryBasedVars'].append(variation)
 
     def getRootFile(self, rtfile, mode=None):
         if type(rtfile) == str:
@@ -123,11 +194,11 @@ class CombineCardTools(object):
     def processHists(self, processName):
         return self.histData[processName] 
 
-    def getFitVariable(self, process):
+    def getFitVariable(self, process, replace=None):
+        fitvar = self.fitVariable.replace(*replace) if replace else self.fitVariable
         if process not in self.fitVariableAppend:
-            return self.fitVariable 
-        return "_".join([self.fitVariable, self.fitVariableAppend[process]])
-
+            return fitvar
+        return "_".join([fitvar, self.fitVariableAppend[process]])
 
     def setCombineChannels(self, groups):
         self.channelsToCombine = groups
@@ -157,24 +228,36 @@ class CombineCardTools(object):
                 if var == "":
                     self.yields[label][processName] = round(hist.Integral(), 3)
 
-    def listOfHistsByProcess(self, processName):
+    def listOfHistsByProcess(self, processName, nameReplace=None):
         if self.fitVariable == "":
             raise ValueError("Must declare fit variable before defining plots")
-        fitVariable = self.getFitVariable(processName)
+        fitVariable = self.getFitVariable(processName, replace=nameReplace)
         plots = ["_".join([fitVariable, chan]) for chan in self.channels]
         variations = self.getVariationsForProcess(processName)
         plots += ["_".join([fitVariable, var, c]) for var in variations for c in self.channels]
-        if processName in self.theoryVariations.keys():
+        if processName in self.theoryVariations:
             plots += [self.weightHistName(c, processName) for c in self.channels]
+            theoryVars = self.theoryVariations[processName]
+            if 'scale' in theoryVars and 'theoryBasedVars' in theoryVars['scale']:
+                thVars = theoryVars['scale']['theoryBasedVars']
+                plots += [self.weightHistName(c, processName, a) for c in self.channels for a in thVars]
         return plots
 
     # processName needs to match a PlotGroup 
     def loadHistsForProcess(self, processName, scaleNorm=1, expandedTheory=True):
-        plotsToRead = self.listOfHistsByProcess(processName)
+        plotsToRead = self.listOfHistsByProcess(processName, nameReplace=("unrolled", "2D"))
 
         group = HistTools.makeCompositeHists(self.inputFile, processName, 
                     {proc : self.crossSectionMap[proc] for proc in self.processes[processName]}, 
                     self.lumi, plotsToRead, rebin=self.rebin, overflow=False)
+
+        if self.isUnrolledFit:
+            for hist in group:
+                if not "TH2" in hist.ClassName():
+                    continue
+                hist = HistTools.makeUnrolledHist(hist, self.unrolledBinsX, self.unrolledBinsY)
+                histName = hist.GetName()
+                group.Add(hist)
 
         fitVariable = self.getFitVariable(processName)
         #TODO:Make optional
@@ -183,11 +266,12 @@ class CombineCardTools(object):
             histName = "_".join([fitVariable, chan]) if chan != "all" else fitVariable
             hist = group.FindObject(histName)
             if not hist:
-                raise RuntimeError("Failed to produce hist %s for process %s" % (histName, processName))
-            #TODO: Make optional
-            if "data" not in processName.lower():
+                logging.warning("Failed to produce hist %s for process %s" % (histName, processName))
+                continue
+            if self.removeZeros and "data" not in processName.lower():
                 HistTools.removeZeros(hist)
-            HistTools.addOverflow(hist)
+            if self.addOverflow:
+                HistTools.addOverflow(hist)
             processedHists.append(histName)
             self.yields[chan].update({processName : round(hist.Integral(), 3) if hist.Integral() > 0 else 0.0001})
 
@@ -196,40 +280,51 @@ class CombineCardTools(object):
             else:
                 self.yields["all"][processName] += self.yields[chan][processName]
 
+            if processName in self.perbinVariations:
+                for varName, var, corr in self.perbinVariations[processName]:
+                    map(lambda x: group.Add(x), self.perBinVariationHists(hist, varName, var, corr, chan == self.channels[0]))
+
+            scaleHists = []
             if processName in self.theoryVariations:
-                weightHist = group.FindObject(self.weightHistName(chan, processName))
-                if not weightHist:
-                    logging.warning("Failed to find %s. Skipping" % self.weightHistName(chan, processName))
-                    continue
                 theoryVars = self.theoryVariations[processName]
-                scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
-                    entries=theoryVars['scale']['entries'], 
-                    central=(theoryVars['scale']['central'] if 'scale' in theoryVars else -1))
-                if expandedTheory:
-                    expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, processName, self.rebin, 
-                        entries=theoryVars['scale']['entries'], 
-                        central=(theoryVars['scale']['central'] if 'scale' in theoryVars else -1),
-                        )
-                    scaleHists.extend(expandedScaleHists)
+                try:
+                    scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory))
+                    if 'theoryBasedVars' in theoryVars['scale']:
+                        for theoryBasedVar in theoryVars['scale']['theoryBasedVars']:
+                            scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory, theoryBasedVar))
+                except ValueError as e:
+                    logging.warning(e)
+                    continue
 
                 pdfHists = []
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
+                weightHist = group.FindObject(self.weightHistName(chan, processName))
                 for var in pdfVars: 
                     pdfVar = theoryVars[var]
-                    
-                    pdfType = "SymmMC"
+                    pdfType = "MC"
                     if "hessian" in pdfVar['combine']:
                         pdfType = "Hessian" if "assym" not in pdfVar['combine'] else "AssymHessian"
 
-                    pdfFunction = "get%sPDFVariationHists" % pdfType
-                    pdfHists += getattr(HistTools, pdfFunction)(weightHist, pdfVar['entries'], processName, 
-                            self.rebin, central=pdfVar['central'],
-                            pdfName=pdfVar['name'])
-                    if expandedTheory and "hessian" in pdfVar['combine']:
-                        allPdfHists = HistTools.getAllSymmetricHessianVariationHists(weightHist, pdfVar['entries'], processName, 
-                            self.rebin, central=pdfVar['central'])
+                    pdfFunction = "get%sPDFVarHists" % pdfType 
+                    pdfUncScale = (1.0/1.645) if "CT18" in pdfVar['name'] else 1.0
+                    args = [weightHist, pdfVar['entries'], processName, self.rebin, pdfVar['central'], pdfVar['name'], pdfUncScale]
+                    if self.isUnrolledFit:
+                        pdfFunction = pdfFunction.replace("get", "getTransformed3D")
+                        args = args[0:1] + [HistTools.makeUnrolledHist, [self.unrolledBinsX, self.unrolledBinsY]] + args[1:]
+                    updatePdfs = getattr(HistTools, pdfFunction)(*args)
+                    pdfHists += updatePdfs
+
+                    if expandedTheory and pdfVar['name'] == 'NNPDF31':
+                        args.pop(len(args)-1)
+                        pdfFunction = HistTools.getAllSymHessianHists if not self.isUnrolledFit else HistTools.getTransformed3DAllSymHessianHists
+                        allPdfHists = pdfFunction(*args)
                         pdfHists.extend(allPdfHists)
-                        cenHist, _ = HistTools.getLHEWeightHists(weightHist, pdfVar['entries'][:1], processName, "pdf", self.rebin)
+
+                        if not self.isUnrolledFit:
+                            cenHist, _ = HistTools.getLHEWeightHists(weightHist, pdfVar['entries'][:1], processName, "pdf", self.rebin)
+                        else:
+                            cenHist = HistTools.getAllTransformed3DHists(weightHist, HistTools.makeUnrolledHist, 
+                                    [self.unrolledBinsX, self.unrolledBinsY], processName, pdfVar['entries'][:1])
                         if len(cenHist) and cenHist[0]:
                             pdfHists.append(cenHist[0].Clone())
                 group.extend(scaleHists+pdfHists)
@@ -237,17 +332,52 @@ class CombineCardTools(object):
                 if chan == self.channels[0]:
                     theoryVarLabels = []
                     for h in group:
-                        theoryVarLabels.extend(re.findall("_".join([self.fitVariable, "(.*)", chan]), h.GetName()))
+                        fitvar = self.getFitVariable(processName)
+                        theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*pdf.*)", chan]), h.GetName()))
+                        theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*QCDscale.*)", chan]), h.GetName()))
                     self.variations[processName].extend(set(theoryVarLabels))
 
-        #TODO: Make optional
-        map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
-        if "data" not in group.GetName().lower():
+        if self.addOverflow:
+            map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
+        if self.removeZeros and "data" not in group.GetName().lower():
             map(HistTools.removeZeros, filter(lambda x: (x.GetName() not in processedHists), group))
         #TODO: You may want to combine channels before removing zeros
-        self.combineChannels(group, processName)
+        if self.channelsToCombine.keys():
+            self.combineChannels(group, processName)
 
         self.histData[processName] = group
+
+    def scaleHistsForProcess(self, group, processName, chan, expandedTheory, append=""):
+        weightHist = group.FindObject(self.weightHistName(chan, processName, append))
+        if not weightHist:
+            raise ValueError("Failed to find %s. Skipping" % self.weightHistName(chan, processName, append))
+        if 'scale' not in self.theoryVariations[processName]:
+            return []
+        scaleVars = self.theoryVariations[processName]['scale']
+        
+        scaleHists = HistTools.getScaleHists(weightHist, processName, self.rebin, 
+                entries=scaleVars['entries'], 
+                exclude=scaleVars['exclude'], 
+                central=scaleVars['central']) if not self.isUnrolledFit else \
+            HistTools.getTransformed3DScaleHists(weightHist, HistTools.makeUnrolledHist,
+                    [self.unrolledBinsX, self.unrolledBinsY], processName,
+                entries=scaleVars['entries'], 
+                exclude=scaleVars['exclude'])
+        if expandedTheory:
+            name = processName if not self.correlateScaleUnc else ""
+            expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, name, self.rebin, 
+                    entries=scaleVars['entries'], 
+                    pairs=scaleVars['groups'], 
+                ) if not self.isUnrolledFit else \
+                HistTools.getTransformed3DExpandedScaleHists(weightHist, 
+                        HistTools.makeUnrolledHist,
+                    [self.unrolledBinsX, self.unrolledBinsY], name,
+                    entries=scaleVars['entries'], 
+                    pairs=scaleVars['groups'], 
+                )
+                
+            scaleHists.extend(expandedScaleHists)
+        return scaleHists
 
     #def makeNuisanceShapeOnly(process, central_hist, uncertainty, channels):
     #    for chan in channels:
@@ -275,6 +405,7 @@ class CombineCardTools(object):
         chan_dict["nuisances"] = nuisances
         chan_dict["fit_variable"] = self.fitVariable
         chan_dict["output_file"] = self.outputFile.GetName()
+        chan_dict["card_append"] = self.extraCardVars + "\n\n" + self.cardGroups 
         outputCard = self.templateName.split("/")[-1].format(channel=chan, label=label) 
         outputCard = outputCard.replace("template", outlabel)
         outputCard = outputCard.replace("__", "_")
@@ -282,4 +413,6 @@ class CombineCardTools(object):
             "/".join([self.outputFolder, outputCard]),
             chan_dict
         )
+        chan_dict.pop("card_append")
+        print chan_dict
 

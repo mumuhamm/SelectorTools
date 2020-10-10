@@ -12,12 +12,14 @@ import os
 
 def getDefaultParser(allow_from_file=True):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--selection", type=str,
-                        required=True, help="Name of selection to make, "
+    parser.add_argument("-s", "--selection", type=str, default="Default",
+                        required=False, help="Name of selection to make, "
                         " as defined in Cuts/<analysis>/<selection>.json")
     parser.add_argument("-a", "--analysis", type=str,
                         required=False, default="WZxsec2016",
                         help="Analysis name, used in selecting the cut json")
+    parser.add_argument("--selectorArgs", nargs='+', type=str,
+        help="List of additional configurations to send to selector")
     if allow_from_file:
         input_group = parser.add_mutually_exclusive_group(required=True)
         input_group.add_argument("-f", "--filenames", 
@@ -37,6 +39,11 @@ def getDefaultParser(allow_from_file=True):
                             "by commas")
     return parser
 
+def getRebin(args):
+    vals = args.split(":")
+    x = [float(i.strip()) for i in vals]
+    return [x[0]+x[2]*i for i in range(int((x[1]-x[0])/x[2]))]
+
 def readPythonOrJson(file_path):
     if ".py" not in file_path[-3:] and ".json" not in file_path[-5:]:
         if os.path.isfile(file_path+".py"):
@@ -51,6 +58,7 @@ def readPythonOrJson(file_path):
 def readAllInfo(file_path):
     info = {}
     for info_file in glob.glob(file_path):
+        file_info = {}
         try:
             file_info = readInfo(info_file)
         except ValueError:

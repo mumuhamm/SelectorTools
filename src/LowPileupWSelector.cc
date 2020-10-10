@@ -1,14 +1,17 @@
 #include "Analysis/VVAnalysis/interface/LowPileupWSelector.h"
 #include <TStyle.h>
 #include <regex>
+#include <math.h>
+#include "TParameter.h"
 
 void LowPileupWSelector::Init(TTree *tree)
 {
-    doSystematics_ = false;
-    //doSystematics_ = true;
+    TParameter<bool>* doSyst = (TParameter<bool>*) GetInputList()->FindObject("doSyst");
+    doSystematics_ = doSyst != nullptr && doSyst->GetVal();
+    std::cout << "INFO: doSystematics is " << doSystematics_ << std::endl;
     allChannels_ = {{ep, "ep"}, {en, "en"}, {mp, "mp"}, {mn, "mn"}};
 
-    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "ptl", "etal", "pfMet",};
+    hists1D_ = {"CutFlow", "mW", "mtW", "mtWUncorr", "yW", "ptW", "phiW", "ptl", "phil", "etal", "pfMet", "pfMetPhi",};
     systHists_ = {"ptW", "ptl", "mtW", "pfMet"};
     systematics_ = {
         {muonEfficiencyMCSubtractUp, "CMS_eff_MCsubt_mUp"},
@@ -127,9 +130,14 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
             }
         }
     }
-    int metIndex = (isMC_ && (isW_ || isZ_) && !isNonprompt_);
+    int metIndex = ((isW_ || isZ_) && !isNonprompt_);
     pfMet = metVector.At(metIndex);
     pfMetPhi = metPhiVector.At(metIndex);
+
+    SetComposite();
+    if (metIndex >= 0 && genV && (genV->Pt() > 0 || genV->Pt() < 150)) {
+        pfMetPhi = pfMetPhi - M_PI;
+    }
 
     if (isMC_) {
         float cenwgt = evtWeight[systematicWeightMap_[Central]];
@@ -162,6 +170,7 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat7Up || 
                 variation.first == recoilCorrectionStat8Up || 
                 variation.first == recoilCorrectionStat9Up) {
+            metIndex = metCorrWeightMap_[variation.first];
             double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
             double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
             pfMet = tempMet > pfMet ? tempMet : pfMet + (pfMet - tempMet);
@@ -180,40 +189,45 @@ void LowPileupWSelector::LoadBranchesBacon(Long64_t entry, SystPair variation) {
                 variation.first == recoilCorrectionStat7Down || 
                 variation.first == recoilCorrectionStat8Down || 
                 variation.first == recoilCorrectionStat9Down) {
+            metIndex = metCorrWeightMap_[variation.first];
             double tempMet = metVector.At(metCorrWeightMap_[variation.first]);
             double tempMetPhi = metPhiVector.At(metCorrWeightMap_[variation.first]);
-            pfMet = tempMet < pfMet ? tempMet : pfMet - (tempMet - pfMet);
-            pfMetPhi = tempMet < pfMet ? tempMetPhi : pfMetPhi - (tempMetPhi - pfMetPhi);
+            pfMet = tempMet < pfMet ? tempMet : pfMet + (pfMet - tempMet);
+            pfMetPhi = tempMet < pfMet ? tempMetPhi : pfMetPhi + (pfMetPhi - tempMetPhi);
         }
     }
+    //SetComposite();
 }
 
 void LowPileupWSelector::SetComposite() {
-    pfMetVec = TLorentzVector();
-    pfMetVec.SetPtEtaPhiM(pfMet, 0., pfMetPhi, 0.);
+    //pfMetVec = TLorentzVector();
+    pfMetVec.SetPtEtaPhiE(pfMet, 0., pfMetPhi, pfMet);
     wCand = *lep + pfMetVec;
-    //mtW = std::sqrt(2*lep->Pt()*pfMet*(1-std::cos(lep->Phi()-pfMetVec.Phi())));
+    mtWcalc = std::sqrt(2*lep->Pt()*pfMet*(1-std::cos(lep->Phi()-pfMetPhi)));
 }
 
 void LowPileupWSelector::FillHistograms(Long64_t entry, SystPair variation) { 
-    if (lep->Pt() < 25 || *mtW < 40)
+    //if (lep->Pt() < 25 || mtWcalc < 40)
+    if (lep->Pt() < 25)
         return;
     SafeHistFill(histMap1D_, "mW", channel_, variation.first, wCand.M(), weight);
-    SafeHistFill(histMap1D_, "mtW", channel_, variation.first, *mtW, weight);
-    SafeHistFill(histMap1D_, "mtWUncorr", channel_, variation.first, *mtWuncorr, weight);
+    SafeHistFill(histMap1D_, "mtW", channel_, variation.first, mtWcalc, weight);
     SafeHistFill(histMap1D_, "ptW", channel_, variation.first, wCand.Pt(), weight);
     SafeHistFill(histMap1D_, "yW", channel_, variation.first, wCand.Rapidity(), weight);
+    SafeHistFill(histMap1D_, "phiW", channel_, variation.first, wCand.Phi(), weight);
     SafeHistFill(histMap1D_, "ptl", channel_, variation.first, lep->Pt(), weight);
+    SafeHistFill(histMap1D_, "phil", channel_, variation.first, lep->Phi(), weight);
     SafeHistFill(histMap1D_, "etal", channel_, variation.first, lep->Eta(), weight);
     SafeHistFill(histMap1D_, "pfMet", channel_, variation.first, pfMet, weight);
+    SafeHistFill(histMap1D_, "pfMetPhi", channel_, variation.first, pfMetPhi, weight);
 
-    if (subprocessHistMaps1D_.empty()) {
+    if (subprocessHistMaps1D_.empty() || !isW_ || genV == nullptr) {
         return;
     }
 
     //std::vector<int> binning = {0, 13, 26, 38, 50, 62, 75, 100};
     std::vector<int> binning = {0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100};
-    size_t upperIndex = std::distance(binning.begin(), std::upper_bound(binning.begin(), binning.end(), genVPt));
+    size_t upperIndex = std::distance(binning.begin(), std::upper_bound(binning.begin(), binning.end(), genV->Pt()));
 
     std::string binname = name_.substr(0, name_.size()-3);
     binname.append("_GenPtW_");

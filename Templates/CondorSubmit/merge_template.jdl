@@ -1,0 +1,23 @@
+Universe             = vanilla
+Executable           = merge.sh
+GetEnv               = false
+
+ShouldTransferFiles  = yes
+request_memory       = 2000
+request_disk         = 2048000
+use_x509userproxy = True
+# stop jobs from running if they blow up in size or memory
+periodic_hold        = (DiskUsage/1024 > 10.0*2000 ||  ImageSize/1024 > RequestMemory*2)
+
+${queue}
+
+Outfile = ${merge_file}
+
+arguments            = $$(Outfile)
+output               = logs/merge.out
+error                = logs/merge.err
+Log                  = logs/merge.log
+
+include : ./list_infiles.sh |
+
+Queue 

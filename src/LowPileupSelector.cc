@@ -4,32 +4,31 @@
 
 void LowPileupSelector::Init(TTree *tree)
 {
-    b.SetTree(tree);
-    if (name_.find("we") != std::string::npos || name_.find("wm") != std::string::npos || name_.find("wm") != std::string::npos){
+    SelectorBase::Init(tree);
+    if (name_.find("wlnu") != std::string::npos){
         isW_ = true;
     }
     else if (name_.find("DYm50") != std::string::npos){
         isZ_ = true;
     }
-    SelectorBase::Init(tree);
 }
 
 void LowPileupSelector::SetBranchesBacon() {
-    b.CleanUp();
-    b.SetBranch("genVPt", genVPt);
-    b.SetBranch("genVPhi", genVPhi);
-    b.SetBranch("genVy", genVy);
-    b.SetBranch("genVMass", genVMass);
-    b.SetBranch("scale1fb", scale1fb);
+    if (isMC_ && (fChain->GetListOfBranches()->FindObject("genV") != nullptr)) {
+        genV = nullptr;
+        fChain->SetBranchAddress("genV", &genV, &b_genV);
+    }
 }
 
 void LowPileupSelector::LoadBranchesBacon(Long64_t entry, std::pair<Systematic, std::string> variation) { 
     weight = 1;
-    b.SetEntry(entry);
 
     if (isMC_) {
         weight = scale1fb*1000;
         //weight = genWeight*PUWeight*scale1fb;
+        if (isZ_ || isW_) {
+            b_genV->GetEntry(entry);
+        }
     }
     SetComposite();
 }

@@ -112,10 +112,13 @@ def makeHistFile(args):
     analysis = "/".join([args['analysis'], selection])
     hists, hist_inputs = UserInput.getHistInfo(analysis, args['hist_names'], args['noHistConfig'])
 
+    extra_inputs = [] if not args['selectorArgs'] else \
+            [ROOT.TParameter(int)(x.split("=")[0], int(x.split("=")[1])) for x in args['selectorArgs']]
+
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
     selector.setNumCores(args['numCores'])
     selector.setOutputfile(fOut.GetName())
-    selector.setInputs(sf_inputs+hist_inputs)
+    selector.setInputs(sf_inputs+hist_inputs+extra_inputs)
     selector.setMaxEntries(args['maxEntries'])
 
     if args['uwvv']:
@@ -124,7 +127,6 @@ def makeHistFile(args):
         logging.debug("Processing channels " % args['channels'])
     elif args['bacon']:
         selector.setNtupeType("Bacon")
-        #selector.setAddSumWeights(False)
     else:
         selector.setNtupeType("NanoAOD")
 
@@ -156,7 +158,7 @@ def makeHistFile(args):
         selector.isBackground()
         selector.setAddSumWeights(False)
         selector.unsetDatasetRegions()
-        selector.setInputs(sf_inputs+hist_inputs+fr_inputs)
+        selector.setInputs(sf_inputs+hist_inputs+fr_inputs+extra_inputs)
         output_name = tmpFileName.replace(".root", "bkgd.root")
         selector.setOutputfile(output_name)
         bkgd = selector.applySelector()
@@ -169,12 +171,13 @@ def makeHistFile(args):
             map(os.remove, combinedNames)
     fOut = ROOT.TFile(tmpFileName, "update")
     OutputTools.addMetaInfo(fOut)
+    fOut.Close()
     if outFolder != '':
         shutil.move(fOut.GetName(), '/'.join([outFolder, fOut.GetName()]))
 
 def main():
     args = getComLineArgs()
-    logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.WARNING))
+    logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.INFO))
 
     makeHistFile(args)
     exit(0)
