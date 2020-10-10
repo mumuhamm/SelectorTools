@@ -4,6 +4,7 @@
 #include <regex>
 #include <cmath>
 #include <TRandom3.h>
+#include <numeric>
 
 void WGenSelector::Init(TTree *tree)
 {
@@ -204,19 +205,30 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         ptl_smear_fill *= 0.999;
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
+        size_t nScaleWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1;
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
-        size_t nWeights = variation.first == Central ? minimalWeights : minimalWeights+nLHEPdfWeight;
+        size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 1);
 
+        size_t nWeights = minimalWeights+allPdfWeights;
+        size_t pdfOffset = nScaleWeights;
+        size_t pdfIdx = 0;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < nLHEScaleWeight)
                 thweight = LHEScaleWeight[i];
-            else if (i < nLHEScaleWeight+nLHEScaleWeightAltSet1)
+            else if (i < nScaleWeights)
                 thweight = LHEScaleWeightAltSet1[i-nLHEScaleWeight];
+            else if (i < nScaleWeights+allPdfWeights) {
+                thweight = LHEPdfWeights[pdfIdx][i-pdfOffset];
+                if (i == pdfOffset+nLHEPdfWeights.at(pdfIdx)-1) {
+                    pdfOffset += nLHEPdfWeights.at(pdfIdx++);
+                }
+            }
+            //TODO: This is broken
             else if (i < minimalWeights-nLHEUnknownWeightAltSet1)
                 thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1];
             else if (i < minimalWeights)
-                thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeightAltSet1];
+                thweight = LHEUnknownWeightAltSet1[i-minimalWeights+nLHEUnknownWeightAltSet1];
             else 
                 thweight = LHEPdfWeight[i-minimalWeights];
 
