@@ -16,7 +16,7 @@
 // Headers needed by this particular selector
 #include <vector>
 #include <unordered_map>
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
 
 #define PAIR(NAME_) {#NAME_, NAME_}
 

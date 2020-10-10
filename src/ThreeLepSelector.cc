@@ -1,5 +1,5 @@
-#include "Analysis/VVAnalysis/interface/ThreeLepSelector.h"
-#include "Analysis/VVAnalysis/interface/HelperFunctions.h"
+#include "Analysis/SelectorTools/interface/ThreeLepSelector.h"
+#include "Analysis/SelectorTools/interface/HelperFunctions.h"
 
 #include <TStyle.h>
 #include <regex>

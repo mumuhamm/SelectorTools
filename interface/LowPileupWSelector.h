@@ -16,12 +16,12 @@
 
 // Headers needed by this particular selector
 #include <vector>
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
-#include "Analysis/VVAnalysis/interface/SelectorBase.h"
-#include "Analysis/VVAnalysis/interface/BranchManager.h"
-#include "Analysis/VVAnalysis/interface/LowPileupSelector.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/SelectorBase.h"
+#include "Analysis/SelectorTools/interface/BranchManager.h"
+#include "Analysis/SelectorTools/interface/LowPileupSelector.h"
 
-#include "Analysis/VVAnalysis/interface/helpers.h"
+#include "Analysis/SelectorTools/interface/helpers.h"
 
 class LowPileupWSelector : public LowPileupSelector {
 public :

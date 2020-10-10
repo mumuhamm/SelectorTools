@@ -8,6 +8,7 @@ import logging
 import os
 import random
 import glob
+import logging
 
 def getComLineArgs():
     parser = UserInput.getDefaultParser(False)
@@ -35,6 +36,7 @@ def makeFileList(filenames, output_file, analysis, selection, das):
 
     files = []
     for name, path in name_path_map.iteritems():
+        logging.debug("Trying to add name %s with path %s" % (name, path))
         try:
             files.extend(getFilesWithName(name, path, das))
         except subprocess.CalledProcessError:
@@ -44,6 +46,8 @@ def makeFileList(filenames, output_file, analysis, selection, das):
     random.shuffle(files)
     with open(output_file, "w") as outfile:
         outfile.writelines(files)
+    if not len(files):
+        raise RuntimeError("Failed to find any files for the given data sets")
 
     return len(files)
 

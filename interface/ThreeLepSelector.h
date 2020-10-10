@@ -15,10 +15,10 @@
 #include <vector>
 
 // Headers needed by this particular selector
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
-#include "Analysis/VVAnalysis/interface/SelectorBase.h"
-#include "Analysis/VVAnalysis/interface/BranchManager.h"
-#include "Analysis/VVAnalysis/interface/GoodParticle.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/SelectorBase.h"
+#include "Analysis/SelectorTools/interface/BranchManager.h"
+#include "Analysis/SelectorTools/interface/GoodParticle.h"
 
 #include "CondFormats/BTauObjects/interface/BTagCalibration.h"
 #include "CondTools/BTau/interface/BTagCalibrationReader.h"
@@ -28,7 +28,7 @@ enum PID {PID_MUON = 13, PID_ELECTRON = 11, PID_BJET = 5, PID_CJET = 4, PID_JET}
 
 class ThreeLepSelector : public SelectorBase {
 public :
-   #include "Analysis/VVAnalysis/interface/FourTopScales.h"
+   #include "Analysis/SelectorTools/interface/FourTopScales.h"
     
     /*****************************************/
     /* ____  ____   ___  __  __   ___ __  __ */

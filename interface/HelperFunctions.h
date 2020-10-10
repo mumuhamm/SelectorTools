@@ -5,7 +5,7 @@
 #include <TMatrixDSymEigen.h>
 #include <TVectorD.h>
 
-#include "Analysis/VVAnalysis/interface/GoodParticle.h"
+#include "Analysis/SelectorTools/interface/GoodParticle.h"
 
 double JetSphericity(std::vector<GoodPart>& jets) {
     TMatrixDSym sphere(3);

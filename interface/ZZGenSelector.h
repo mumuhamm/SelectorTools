@@ -2,7 +2,7 @@
 #define ZZGenSelector_h
 
 #include <vector>
-#include "Analysis/VVAnalysis/interface/SelectorBase.h"
+#include "Analysis/SelectorTools/interface/SelectorBase.h"
 #include <TH3.h>
 
 class ZZGenSelector : public SelectorBase {

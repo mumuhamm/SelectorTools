@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/WZSelectorBase.h"
+#include "Analysis/SelectorTools/interface/WZSelectorBase.h"
 #include "TLorentzVector.h"
 #include <TStyle.h>
 #include <regex>

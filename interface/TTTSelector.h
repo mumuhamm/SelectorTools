@@ -13,10 +13,10 @@
 
 // Headers needed by this particular selector
 #include <vector>
-#include "Analysis/VVAnalysis/interface/ScaleFactor.h"
-#include "Analysis/VVAnalysis/interface/SelectorBase.h"
-#include "Analysis/VVAnalysis/interface/BranchManager.h"
-#include "Analysis/VVAnalysis/interface/GoodParticle.h"
+#include "Analysis/SelectorTools/interface/ScaleFactor.h"
+#include "Analysis/SelectorTools/interface/SelectorBase.h"
+#include "Analysis/SelectorTools/interface/BranchManager.h"
+#include "Analysis/SelectorTools/interface/GoodParticle.h"
 
 typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> LorentzVector;
 

@@ -1,4 +1,4 @@
-#include "Analysis/VVAnalysis/interface/WZBackgroundSelector.h"
+#include "Analysis/SelectorTools/interface/WZBackgroundSelector.h"
 #include <TStyle.h>
 
 void WZBackgroundSelector::SlaveBegin(TTree * /*tree*/)
