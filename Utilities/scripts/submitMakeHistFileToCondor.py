@@ -34,7 +34,7 @@ def getComLineArgs():
     parser.add_argument("-m", "--merge", nargs=2, type=str,
         metavar=("mergedFileName", "completeFraction"),
         default=None, help="Merge outputs from all jobs to file (submit as DAG)" \
-        "if > completeFraction (in %) jobs complete")
+        "if > completeFraction (in %%) jobs complete")
     parser.add_argument("--force", action='store_true',
         help="Force overwrite of existing directories")
     parser.add_argument("--removeUnmerged", action='store_true',
