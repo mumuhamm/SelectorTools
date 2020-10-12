@@ -1,2 +1,2 @@
 #!/bin/bash
-rm *.root
+rm $(find . -regex '.*_.*_[0-9]+\.root')
