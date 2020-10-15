@@ -155,7 +155,7 @@ Not that the condor jobs require afs in order to access some configuration files
 NOTE: At it is not allowed to read any proxy stored below /tmp directory (which is a default directory to store the proxy). You should set this to a path on afs, for example.:
 
 ```
-export X509_USER_PROXY=”/afs/cern.ch/user/<letter>/$USER/private/proxy/myproxy”
+export X509_USER_PROXY=”/afs/cern.ch/user/${USER::1}/$USER/private/proxy/myproxy”
 voms-proxy-init --voms=cms --valid=168:00
 ```
 
