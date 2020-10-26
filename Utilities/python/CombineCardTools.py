@@ -255,7 +255,7 @@ class CombineCardTools(object):
             for hist in group:
                 if not "TH2" in hist.ClassName():
                     continue
-                hist = HistTools.makeUnrolledHist(hist, self.unrolledBinsX, self.unrolledBinsY)
+                hist = HistTools.makeUnrolledHist(hist, self.unrolledBinsX, self.unrolledBinsY, overflow=self.addOverflow)
                 histName = hist.GetName()
                 group.Add(hist)
 

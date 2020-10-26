@@ -78,7 +78,7 @@ def setupMergeStep(submit_dir, queue, numjobs, merge, removeUnmerged):
     outfile = "/".join([submit_dir, "submit_and_merge.dag"])
     ConfigureJobs.fillTemplatedFile(template, outfile, 
             {"minComplete" : int(completeFraction*numjobs),
-            "postMerge" : "SCRIPT POST B removeRootFiles.sh" if removeUnmerged else ""})
+            "postMerge" : ("SCRIPT POST B removeRootFiles.sh %s" % merge_file) if removeUnmerged else ""})
 
     for f in ["list_infiles.sh", "completed.sh", "removeRootFiles.sh"]:
         shutil.copy("Templates/CondorSubmit/%s" % f, "/".join([submit_dir, f]))

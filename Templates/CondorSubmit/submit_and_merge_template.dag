@@ -1,5 +1,5 @@
 JOB A submit.jdl
 SCRIPT POST A completed.sh ${minComplete}
 JOB B merge.jdl
-${postMerge}
+${postMerge} 
 PARENT A CHILD B

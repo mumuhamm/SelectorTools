@@ -12,4 +12,4 @@ if [[ $$1 == /eos/user* ]]; then
     outfile="root://eosuser.cern.ch/$$1"
 fi
 
-hadd -f $$outfile *.root
+hadd -f -k $$outfile *.root
