@@ -104,6 +104,7 @@ class CombineCardTools(object):
         if not os.path.isdir(outputFolder):
             os.makedirs(outputFolder)
 
+    # Groups are muR, muF, muRmuF
     def setScaleVarGroups(self, processName, groups):
         if processName not in self.theoryVariations or 'scale' not in self.theoryVariations[processName]:
             raise ValueError("Cannot define variation groups before scale is defined for process")

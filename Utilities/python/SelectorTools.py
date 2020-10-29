@@ -8,6 +8,7 @@ import os
 import multiprocessing
 import subprocess
 import logging
+import re
 
 class SelectorDriver(object):
     def __init__(self, analysis, selection, input_tier, year):
@@ -55,8 +56,8 @@ class SelectorDriver(object):
     def __call__(self, args):
         self.processDatasetHelper(args)
 
-    def tempfileName(self, dataset):
-        return "temp_%s_%s" % (dataset, self.outfile_name.split("/")[-1])
+    def tempfileName(self):
+        return "temp_%s_%s" % (multiprocessing.current_process().name, self.outfile_name.split("/")[-1])
 
     def setChannels(self, channels):
         self.channels = channels
@@ -176,6 +177,16 @@ class SelectorDriver(object):
 
             self.datasets[dataset] = [file_path]
 
+    def expandDatasetFilePaths(self):
+        for dataset, file_path in self.datasets.iteritems():
+            files = []
+            for f in file_path:
+                if os.path.isfile(f):
+                    files.append(f)
+                else:
+                    files.extend(glob.glob(f))
+            self.datasets[dataset] = files[:10]
+
     def applySelector(self):
         for chan in self.channels:
             self.addTNamed("channel", chan)
@@ -237,7 +248,7 @@ class SelectorDriver(object):
         if self.numCores > 1:
             self.outfile.Close()
             chanNum = self.channels.index(chan)
-            self.current_file = ROOT.TFile.Open(self.tempfileName(dataset), "recreate" if chanNum == 0 else "update")
+            self.current_file = ROOT.TFile.Open(self.tempfileName(), "recreate" if chanNum == 0 else "update")
         if not self.current_file:
             self.current_file = ROOT.TFile.Open(self.outfile_name)
 
@@ -296,11 +307,16 @@ class SelectorDriver(object):
             raise RuntimeError("Failed to collect data from parallel run")
 
     def processParallelByDataset(self, datasets, chan):
-        numCores = min(self.numCores, len(datasets))
+        print self.datasets
+        self.expandDatasetFilePaths()
+        print self.datasets
+        expanded_datasets = [[d, [f], chan] for d, files in datasets.iteritems() for f in files]
+        print expanded_datasets
         p = multiprocessing.Pool(processes=self.numCores)
-        p.map(self, [[dataset, f, chan] for dataset, f in datasets.iteritems()])
+        p.map(self, expanded_datasets)
         # Store arrays in temp files, since it can get way too big to keep around in memory
-        tempfiles = [self.tempfileName(d) for d in datasets] 
+        tempfiles = glob.glob(self.tempfileName().replace("MainProcess", "PoolWorker*"))
+        p.close()
         self.combineParallelFiles(tempfiles, chan)
 
     # Pool.map can only take in one argument, so expand the array

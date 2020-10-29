@@ -53,7 +53,7 @@ def makeFileList(filenames, output_file, analysis, selection, das):
 
 def main():
     args = getComLineArgs()
-    makeFileListFromDAS(args['filenames'], args['output_file'], args['analysis'], args['selection'], args['das'])
+    makeFileList(args['filenames'], args['output_file'], args['analysis'], args['selection'], args['das'])
 
 if __name__ == "__main__":
     main()

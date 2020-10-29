@@ -100,9 +100,10 @@ for process in plot_groups:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(10, 111), central=0, specName="NNPDF31")
     elif "minnlo" in process:
-        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
+        cardtool.addTheoryVar(process, 'scale', range(1,19)[::2], exclude=[2, 6], central=4)
+        cardtool.setScaleVarGroups(process, [(1,7), (3,5), (0,8)])
         # NNPDF3.0 scale unc
-        cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0, specName="NNPDF30")
+        #cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0, specName="NNPDF30")
         if not args.noPdf:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(19, 120), central=0, specName="NNPDF31")

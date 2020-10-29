@@ -255,7 +255,7 @@ def getScaleHists(scale_hist2D, name, rebin=None, entries=[i for i in range(1,10
     map(lambda h: logging.debug("Hist %s has integral %0.2f" % (h.GetName(), h.Integral())), hists)
     return getVariationHists(hists, name, hist_name, lambda x: x[-1], lambda x: x[1], central)
 
-# Pairs should correspond to muR, muF in (0.5, 1) ordered muR, muF, muR+muF
+# Pairs should correspond to muR, muF in (0.5, 2) ordered muR, muF, muR+muF
 def makeExpandedScaleHists(hists, hist_name, name, pairs):
     variationSet = []
     for label, indices in zip(["muR", "muF", "muRmuF"], pairs):

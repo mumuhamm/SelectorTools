@@ -11,6 +11,7 @@ import os
 import shutil
 import logging
 import sys
+import makeFileList
 
 def getComLineArgs():
     parser = UserInput.getDefaultParser()
@@ -132,6 +133,13 @@ def makeHistFile(args):
 
     if args['filenames']:
         selector.setDatasets(args['filenames'])
+        #else:
+        #    tmpfile = "tmpfilelist.txt" 
+        #    #numfiles = makeFileList.makeFileList(args['filenames'], 
+        #    #        tmpfile, args['analysis'], args['input_tier'], False)
+        #    numfiles = 10
+        #    selector.setFileList(tmpfile, numfiles, 0)
+        #    #os.remove(tmpfile)
     else:
         selector.setFileList(*args['inputs_from_file'])
 
