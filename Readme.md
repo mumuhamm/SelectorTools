@@ -150,11 +150,22 @@ Parallel mode currently only supports parallelizing by dataset. That is, each da
 
 You can farm out the processing of individual files from a data set using the script [submitMakeHistFileToCondor.py](Utilities/scripts/submitMakeHistFileToCondor.py). Run ```./Utilities/scripts/submitMakeHistFileToCondor.py --help``` to see options for this script. 
 
+Not that the condor jobs require afs in order to access some configuration files for the CMSSW/ROOT setup. Work is in progress to make this independent of afs, but currently it is expected that you use either lxplus or another machine where condor can access afs. 
+
+NOTE: At it is not allowed to read any proxy stored below /tmp directory (which is a default directory to store the proxy). You should set this to a path on afs, for example.:
+
+```
+export X509_USER_PROXY=”/afs/cern.ch/user/${USER::1}/$USER/private/proxy/myproxy”
+voms-proxy-init --voms=cms --valid=168:00
+```
+
 An example command for the ZGen analysis is
 
 ```
 ./Utilities/scripts/submitMakeHistFileToCondor.py -f DYm50 -a ZGen -s None --input_tier NanoAOD -d ~/work/Submit_DYtest -n 1 -q longlunch --removeUnmerged --merge ~/work/Submit_DYtest/DYtest.root 0.9 --selectorArgs theoryUnc=1 --submit
 ```
+
+The name "DYm50" is specified in the AnalysisDatasetManager in FileInfo/ZGen/NanoAOD.py. The DAS path stored here is used to look up all the files for this dataset and to create a list of files passed to condor. It is expected that the files are readable with xrootd. If you create private files, they should either be published, or be in a director that is accessible with ls, e.g., eos.
 
 ### Implementing your own selector
 
