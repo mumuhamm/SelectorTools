@@ -19,6 +19,8 @@ def getComLineArgs():
         default=35.87, help="luminosity value (in fb-1)")
     parser.add_argument("--maxEntries", "-m", type=int,
         default=-1, help="Max entries to process")
+    parser.add_argument("--maxFiles", type=int,
+        default=-1, help="Max files to process")
     parser.add_argument("--output_file", "-o", type=str,
         default="test.root", help="Output file name")
     parser.add_argument("--debug", action='store_true',
@@ -115,12 +117,14 @@ def makeHistFile(args):
 
     extra_inputs = [] if not args['selectorArgs'] else \
             [ROOT.TParameter(int)(x.split("=")[0], int(x.split("=")[1])) for x in args['selectorArgs']]
+    print extra_inputs
 
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
     selector.setNumCores(args['numCores'])
     selector.setOutputfile(fOut.GetName())
     selector.setInputs(sf_inputs+hist_inputs+extra_inputs)
     selector.setMaxEntries(args['maxEntries'])
+    selector.setMaxFiles(args['maxFiles'])
 
     if args['uwvv']:
         selector.setNtupeType("UWVV")
@@ -133,13 +137,6 @@ def makeHistFile(args):
 
     if args['filenames']:
         selector.setDatasets(args['filenames'])
-        #else:
-        #    tmpfile = "tmpfilelist.txt" 
-        #    #numfiles = makeFileList.makeFileList(args['filenames'], 
-        #    #        tmpfile, args['analysis'], args['input_tier'], False)
-        #    numfiles = 10
-        #    selector.setFileList(tmpfile, numfiles, 0)
-        #    #os.remove(tmpfile)
     else:
         selector.setFileList(*args['inputs_from_file'])
 

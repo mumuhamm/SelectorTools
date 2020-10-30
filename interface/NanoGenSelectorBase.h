@@ -63,10 +63,10 @@ public :
     bool doPhotons_ = true;
     bool nNeutrinos_ = 0;
     bool doFiducial_ = false;
-    bool doBorn_ = true;
-    bool doLHE_ = true;
-    bool doPreFSR_ = true;
-    bool doBareLeptons_ = true;
+    bool doBorn_ = false;
+    bool doLHE_ = false;
+    bool doPreFSR_ = false;
+    bool doBareLeptons_ = false;
 
     float refWeight = 1;
 

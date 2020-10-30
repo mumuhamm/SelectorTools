@@ -25,6 +25,8 @@ public :
     float mTtrue;
     float mTmet;
     float cenWeight;
+    bool doMassVar_ = false;
+    bool doMuonVar_ = false;
     
     float ptl_smear;
     

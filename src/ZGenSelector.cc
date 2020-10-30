@@ -3,6 +3,7 @@
 #include <TStyle.h>
 #include <regex>
 #include <numeric>
+#include "TParameter.h"
 
 void ZGenSelector::Init(TTree *tree)
 {
@@ -25,36 +26,24 @@ void ZGenSelector::Init(TTree *tree)
         "MET", "HT", };
     nLeptons_ = 2;
 
-    doSystematics_ = true;
-    systematics_ = {
-        {BareLeptons, "barelep"},
-        {PreFSRLeptons, "prefsr"},
-        {BornParticles, "born"},
-        {LHEParticles, "lhe"},
-        {mZShift100MeVUp, "mZShift100MeVUp"},
-        {mZShift50MeVUp, "mZShift50MeVUp"},
-        {mZShift25MeVUp, "mZShift25MeVUp"},
-        {mZShift20MeVUp, "mZShift20MeVUp"},
-        {mZShift10MeVUp, "mZShift10MeVUp"},
-        {mZShift100MeVDown, "mZShift100MeVDown"},
-        {mZShift50MeVDown, "mZShift50MeVDown"},
-        {mZShift25MeVDown, "mZShift25MeVDown"},
-        {mZShift20MeVDown, "mZShift20MeVDown"},
-        {mZShift10MeVUp, "mZShift10MeVUp"},
-    };
+    TParameter<bool>* massVar = (TParameter<bool>*) GetInputList()->FindObject("massVar");
+    doMassVar_ = massVar != nullptr && massVar->GetVal();
 
-    // Chose by MC sample
+    if (doMassVar_) {
+        systematics_[mZShift50MeVUp] = "mZShift50MeVUp";
+        systematics_[mZShift50MeVDown] = "mZShift50MeVDown";
+        systematics_[mZShift100MeVUp] = "mZShift100MeVUp";
+        systematics_[mZShift100MeVDown] = "mZShift100MeVDown";
+    }
+    doSystematics_ = !systematics_.empty();
+
     if (name_.find("nnlops") != std::string::npos) {
         MV_GEN_ = 80398.0;
         GAMMAV_GEN_ = 2088.720;
     }
     else if (name_.find("minnlo") != std::string::npos) {
-        MV_GEN_ = 91153.48061918276;
-        GAMMAV_GEN_ = 2494.2663787728243;
-
-        if (name_.find("mZup") != std::string::npos) {
-            MV_GEN_ = 91253.48061918276;
-        }
+        MV_GEN_ = 91153.509740726733;
+        GAMMAV_GEN_ = 2493.2018986110700;
     }
     else {
         MV_GEN_ = 80419.;

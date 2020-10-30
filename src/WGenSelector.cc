@@ -5,6 +5,7 @@
 #include <cmath>
 #include <TRandom3.h>
 #include <numeric>
+#include "TParameter.h"
 
 void WGenSelector::Init(TTree *tree)
 {
@@ -18,25 +19,24 @@ void WGenSelector::Init(TTree *tree)
         "ptl_smear",
     };
     hists2D_ = {"etal_ptl_2D", "etal_ptl_smear_2D"};
-    doSystematics_ = true;
-    systematics_ = {
-        {mWShift100MeVUp, "mWShift100MeVUp"},
-        {mWShift50MeVUp, "mWShift50MeVUp"},
-        {mWShift25MeVUp, "mWShift25MeVUp"},
-        {mWShift20MeVUp, "mWShift20MeVUp"},
-        {mWShift10MeVUp, "mWShift10MeVUp"},
-        {mWShift100MeVDown, "mWShift100MeVDown"},
-        {mWShift50MeVDown, "mWShift50MeVDown"},
-        {mWShift25MeVDown, "mWShift25MeVDown"},
-        {mWShift20MeVDown, "mWShift20MeVDown"},
-        {mWShift10MeVUp, "mWShift10MeVUp"},
-        {BareLeptons, "barelep"},
-        {PreFSRLeptons, "prefsr"},
-        {BornParticles, "born"},
-        {LHEParticles, "lhe"},
-        {muonScaleUp, "CMS_scale_mUp"},
-        {muonScaleDown, "CMS_scale_mDown"},
-    };
+
+    TParameter<bool>* massVar = (TParameter<bool>*) GetInputList()->FindObject("massVar");
+    doMassVar_ = massVar != nullptr && massVar->GetVal();
+    TParameter<bool>* muonVar = (TParameter<bool>*) GetInputList()->FindObject("muonVar");
+    doMuonVar_ = muonVar != nullptr && muonVar->GetVal();
+
+    if (doMassVar_) {
+        systematics_[mWShift50MeVUp] = "mWShift50MeVUp";
+        systematics_[mWShift50MeVDown] = "mWShift50MeVDown";
+        systematics_[mWShift100MeVUp] = "mWShift100MeVUp";
+        systematics_[mWShift100MeVDown] = "mWShift100MeVDown";
+    }
+
+    if (doMuonVar_) {
+        systematics_[muonScaleUp] = "CMS_scale_mUp";
+        systematics_[muonScaleDown] = "CMS_scale_mDown";
+    }
+
     systHists_ = hists1D_;
     systHists2D_ = hists2D_;
 
@@ -54,8 +54,8 @@ void WGenSelector::Init(TTree *tree)
         GAMMAV_GEN_ = 2088.720;
     }
     else if (name_.find("minnlo") != std::string::npos) {
-        MV_GEN_ = 80351.97159;
-        GAMMAV_GEN_ = 2084.29889;
+        MV_GEN_ = 80351.812293789408;
+        GAMMAV_GEN_ = 2090.4310808144846;
     }
     else {
         MV_GEN_ = 80419.;

@@ -262,9 +262,15 @@ void SelectorBase::InitializeHistogramsFromConfig() {
             if (histMap1D_.find(centralLabel) != histMap1D_.end() || histMap2D_.find(centralLabel) != histMap2D_.end()) { 
                 InitializeHistogramFromConfig(name, chan, histData);
             }
-            // May add a syst hist to plotobjects for plotting purposes, surpress errors in this case
-            else if (std::find(tempSystHistNames.begin(), tempSystHistNames.end(), name) == tempSystHistNames.end())
-                std::cerr << "Skipping invalid histogram '" << name << "'" << std::endl;
+            //Don't print out a ton of annoying errors if it's a syst hist
+            else {
+                if (std::find(tempSystHistNames.begin(), tempSystHistNames.end(), name) == tempSystHistNames.end())
+                    break;
+                size_t idx = centralLabel.name.find_last_of("_");
+                HistLabel tmplabel = {idx != std::string::npos ? centralLabel.name.substr(0, idx) : "", chan.first, Central};
+                if (idx == std::string::npos || (histMap1D_.find(tmplabel) == histMap1D_.end() && histMap2D_.find(tmplabel) == histMap2D_.end()))
+                    std::cerr << "Skipping invalid histogram '" << name << "'" << std::endl;
+            }
         }
     }
 

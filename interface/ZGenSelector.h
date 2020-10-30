@@ -23,6 +23,7 @@ public :
     TTreeReaderValue<Int_t> Generator_id1 = {fReader, "Generator_id1"};
     TTreeReaderValue<Int_t> Generator_id2 = {fReader, "Generator_id2"};
     float cenWeight;
+    bool doMassVar_ = false;
     
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;
