@@ -117,7 +117,6 @@ def makeHistFile(args):
 
     extra_inputs = [] if not args['selectorArgs'] else \
             [ROOT.TParameter(int)(x.split("=")[0], int(x.split("=")[1])) for x in args['selectorArgs']]
-    print extra_inputs
 
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
     selector.setNumCores(args['numCores'])

@@ -90,6 +90,8 @@ public :
     Float_t LHEScaleWeightAltSet1[N_LHESCALE_WEIGHTS_];
     UInt_t nLHEUnknownWeight = 0;
     Float_t LHEUnknownWeight[100];
+    UInt_t nMEParamWeight = 0;
+    Float_t MEParamWeight[100];
     UInt_t nLHEUnknownWeightAltSet1 = 0;
     Float_t LHEUnknownWeightAltSet1[100];
 
@@ -108,6 +110,7 @@ public :
     bool altScaleWeights_ = false;
     std::array<bool, MAX_PDF_SETS> pdfWeights_ = {{false}};
     bool unknownWeights_ = false;
+    bool paramWeights_ = false;
     bool unknownWeightsAlt_ = false;
 
     TTreeReaderValue<UInt_t> nGenDressedLepton = {fReader, "nGenDressedLepton"};

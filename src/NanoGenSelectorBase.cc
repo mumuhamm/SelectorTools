@@ -68,6 +68,7 @@ void NanoGenSelectorBase::Init(TTree *tree)
     b.SetTree(tree);
     scaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeight") != nullptr);
     altScaleWeights_ = (tree->GetListOfBranches()->FindObject("nLHEScaleWeightAltSet1") != nullptr);
+    paramWeights_ = (tree->GetListOfBranches()->FindObject("nMEParamWeight") != nullptr);
     unknownWeights_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeight") != nullptr);
     unknownWeightsAlt_ = (tree->GetListOfBranches()->FindObject("nLHEUnknownWeightAltSet1") != nullptr);
     
@@ -136,6 +137,10 @@ void NanoGenSelectorBase::SetBranchesNanoAOD() {
             b.SetSpecificBranch("LHEUnknownWeightAltSet1", LHEUnknownWeightAltSet1);
         }
     }
+    if (paramWeights_) {
+        b.SetSpecificBranch("nMEParamWeight", nMEParamWeight);
+        b.SetSpecificBranch("MEParamWeight", MEParamWeight);
+    }
 }
 
 void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) { 
@@ -164,6 +169,10 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
             b.SetSpecificEntry(entry, "LHEUnknownWeightAltSet1");
             b.SetSpecificEntry(entry, "nLHEUnknownWeightAltSet1");
         }
+    }
+    if (paramWeights_) {
+        b.SetSpecificEntry(entry, "MEParamWeight");
+        b.SetSpecificEntry(entry, "nMEParamWeight");
     }
 
     if (!scaleWeights_)

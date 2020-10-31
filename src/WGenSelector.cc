@@ -206,10 +206,10 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
 
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t nScaleWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1;
-        size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nLHEUnknownWeight+nLHEUnknownWeightAltSet1;
+        size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nMEParamWeight;
         size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 1);
 
-        size_t nWeights = minimalWeights+allPdfWeights;
+        size_t nWeights = minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1+allPdfWeights;
         size_t pdfOffset = nScaleWeights;
         size_t pdfIdx = 0;
         for (size_t i = 0; i < nWeights; i++) {
@@ -223,6 +223,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
                 if (i == pdfOffset+nLHEPdfWeights.at(pdfIdx)-1) {
                     pdfOffset += nLHEPdfWeights.at(pdfIdx++);
                 }
+            }
+            else if (i >= nScaleWeights+allPdfWeights) {
+                thweight = MEParamWeight[i-nLHEScaleWeight+allPdfWeights];
             }
             //TODO: This is broken
             else if (i < minimalWeights-nLHEUnknownWeightAltSet1)

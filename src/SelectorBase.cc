@@ -313,26 +313,27 @@ void SelectorBase::InitializeHistogramFromConfig(std::string name, ChannelPair c
         HistLabel histlabel = {name, channel.first, variation.first};
 
         if (variation.first == Central) {
-            if (is1D) 
+            if (is1D) {
                 AddObject<TH1D>(histMap1D_[histlabel], histName.c_str(), histData.at(0).c_str(),
                         nbins, xmin, xmax);
-            else
+            }
+            else {
                 AddObject<TH2D>(histMap2D_[histlabel], histName.c_str(), histData.at(0).c_str(), 
                         nbins, xmin, xmax, nbinsy, ymin, ymax);
+            }
         }
-        else if ((is1D && std::find(systHists_.begin(), systHists_.end(), name) == systHists_.end()) ||
-                    (!is1D && std::find(systHists2D_.begin(), systHists2D_.end(), name) == systHists2D_.end()))
-            continue;
-
-        if (is1D) {
-            histMap1D_[histlabel] = {};
-            AddObject<TH1D>(histMap1D_[histlabel], histName.c_str(), 
-                histData.at(0).c_str(), nbins, xmin, xmax);
-        }
-        else {
-            histMap1D_[histlabel] = {};
-            AddObject<TH2D>(histMap2D_[histlabel], histName.c_str(), 
-                histData.at(0).c_str(), nbins, xmin, xmax, nbinsy, ymin, ymax);
+        else if ((is1D && std::find(systHists_.begin(), systHists_.end(), name) != systHists_.end()) ||
+                    (!is1D && std::find(systHists2D_.begin(), systHists2D_.end(), name) != systHists2D_.end())) {
+            if (is1D) {
+                histMap1D_[histlabel] = {};
+                AddObject<TH1D>(histMap1D_[histlabel], histName.c_str(), 
+                    histData.at(0).c_str(), nbins, xmin, xmax);
+            }
+            else {
+                histMap1D_[histlabel] = {};
+                AddObject<TH2D>(histMap2D_[histlabel], histName.c_str(), 
+                    histData.at(0).c_str(), nbins, xmin, xmax, nbinsy, ymin, ymax);
+            }
         }
 
         if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {

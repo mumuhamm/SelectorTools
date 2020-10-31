@@ -246,10 +246,6 @@ class SelectorDriver(object):
     def collectOutput(self, dataset, chan):
         addSumweights = self.addSumweights and self.channels.index(chan) == 0 and "data" not in dataset
         output_list = self.select.GetOutputList()
-        for i in output_list:
-            print i.GetName()
-            for h in i:
-                print h
         processes = [dataset] + (self.regions[dataset] if dataset in self.regions else [])
         self.writeOutput(output_list, chan, processes, dataset, addSumweights)
 
