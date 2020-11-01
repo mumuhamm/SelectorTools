@@ -40,8 +40,7 @@ class SelectorDriver(object):
                 "a defined selector. Please edit "
                 "Utilities/python/SelectorTools.py to add it.")
         self.selector_name = selector_map[analysis]
-        #self.addSumweights = True
-        self.addSumweights = False
+        self.addSumweights = True
         self.ntupleType = "NanoAOD"
         self.year = year
         self.numCores = 1
