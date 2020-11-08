@@ -142,9 +142,9 @@ class CombineCardTools(object):
         return varHists
 
     def addTheoryVar(self, processName, varName, entries, central=0, exclude=[], specName=""):
-        if "scale" not in varName.lower() and "pdf" not in varName.lower():
-            raise ValueError("Invalid theory uncertainty %s. Must be type 'scale' or 'pdf'" % varName)
-        name = "scale" if "scale" in varName.lower() else ("pdf"+specName)
+        if varName.lower() not in ["scale", "pdf_hessian", "pdf_mc", "pdf_assymhessian", "other"]:
+            raise ValueError("Invalid theory uncertainty %s. Must be type 'scale,' 'pdf,' or 'other'" % varName)
+        name = "scale" if "scale" in varName.lower() else ("pdf"+specName if "pdf" in varName.lower() else specName)
 
         if not processName in self.theoryVariations:
             self.theoryVariations[processName] = {}
@@ -155,7 +155,7 @@ class CombineCardTools(object):
                 "central" : central,
                 "exclude" : exclude,
                 "groups" : [(3,6), (1,2), (4,8)],
-                "combine" : "envelope" if name == "scale" else varName.replace("pdf_", ""),
+                "combine" : "envelope" if varName in ["scale", "other"] else varName.replace("pdf_", ""),
             }
         })
 
@@ -289,13 +289,17 @@ class CombineCardTools(object):
             if processName in self.theoryVariations:
                 theoryVars = self.theoryVariations[processName]
                 try:
-                    scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory))
+                    scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory=True))
                     if 'theoryBasedVars' in theoryVars['scale']:
                         for theoryBasedVar in theoryVars['scale']['theoryBasedVars']:
                             scaleHists.extend(self.scaleHistsForProcess(group, processName, chan, expandedTheory, theoryBasedVar))
                 except ValueError as e:
                     logging.warning(e)
                     continue
+
+                others = [k for k in theoryVars.keys() if theoryVars[k]['combine'] == 'envelope' and k != 'scale']
+                for other in others:
+                    group.extend(self.lheVarHistsForProcess(group, processName, chan, varName=other))
 
                 pdfHists = []
                 pdfVars = filter(lambda x: 'pdf' in x, theoryVars.keys())
@@ -348,10 +352,22 @@ class CombineCardTools(object):
 
         self.histData[processName] = group
 
-    def scaleHistsForProcess(self, group, processName, chan, expandedTheory, append=""):
-        weightHist = group.FindObject(self.weightHistName(chan, processName, append))
+    def lheVarHistsForProcess(self, group, processName, chan, varName):
+        weighthist_name = self.weightHistName(chan, processName)
+        weightHist = group.FindObject(weighthist_name)
         if not weightHist:
-            raise ValueError("Failed to find %s. Skipping" % self.weightHistName(chan, processName, append))
+            raise ValueError("Failed to find %s. Skipping" % weighthist_name)
+        var = self.theoryVariations[processName][varName]
+        hists,name = HistTools.getLHEWeightHists(weightHist, var['entries'], "", varName)
+        hists[0].SetName(name)
+        hists[1].SetName(name.replace("Up", "Down"))
+        return hists
+
+    def scaleHistsForProcess(self, group, processName, chan, expandedTheory, append=""):
+        weighthist_name = self.weightHistName(chan, processName)
+        weightHist = group.FindObject(weighthist_name)
+        if not weightHist:
+            raise ValueError("Failed to find %s. Skipping" % weighthist_name)
         if 'scale' not in self.theoryVariations[processName]:
             return []
         scaleVars = self.theoryVariations[processName]['scale']
@@ -364,6 +380,7 @@ class CombineCardTools(object):
                     [self.unrolledBinsX, self.unrolledBinsY], processName,
                 entries=scaleVars['entries'], 
                 exclude=scaleVars['exclude'])
+
         if expandedTheory:
             name = processName if not self.correlateScaleUnc else ""
             expandedScaleHists = HistTools.getExpandedScaleHists(weightHist, name, self.rebin, 

@@ -284,17 +284,21 @@ class SelectorDriver(object):
         del output_list
 
     def getFileNames(self, file_path):
-        xrootd = "/store" in file_path.split("/hdfs/")[0][:7]
-        xrootd_user = "/store/user" in file_path.split("/hdfs/")[0][:12]
+        xrootd = "store" in file_path.split("/")[0:4]
+        xrootd_user = "/store/user" in file_path.replace("/eos/cms", "")[:7]
         if not (xrootd or os.path.isfile(file_path) or len(glob.glob(file_path.rsplit("/", 1)[0]))):
             raise ValueError("Invalid path! Skipping dataset. Path was %s" 
                 % file_path)
 
-        # Assuming these are user files on HDFS, otherwise it won't work
         if (xrootd and not xrootd_user):
             xrd = 'root://%s/' % ConfigureJobs.getXrdRedirector()
-            filenames = [xrd + file_path]
-            return filenames
+            allfiles = glob.glob(file_path) 
+            if not allfiles:
+                return [xrd + file_path]
+            else:
+                xrd_path = lambda x: "".join([xrd, "/store", x.rsplit("/store")[1]])
+                return [xrd_path(f) for f in allfiles]
+
         filenames =  glob.glob(file_path) if not xrootd_user else \
                 ConfigureJobs.getListOfHDFSFiles(file_path)
         filenames = ['root://cmsxrootd.hep.wisc.edu/' + f if "/store/user" in f[0:12] else f for f in filenames]
@@ -388,6 +392,7 @@ class SelectorDriver(object):
             if weightSignOnly or wSuppress:
                 meta_tree_name = "Events"
                 sumweights_branch = "genWeight" 
+                nevents_branch = "Entries$"
         elif self.ntupleType == "Bacon":
             sumWeightsType = "fromHist"
             weightshist_name = "hGenWeights"
