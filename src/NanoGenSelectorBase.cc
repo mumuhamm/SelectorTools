@@ -400,6 +400,15 @@ reco::GenParticle NanoGenSelectorBase::makeGenParticle(int pdgid, int status, fl
     return lep;
 }
 
+void NanoGenSelectorBase::SetScaleFactors() {
+    std::cout << "Setting scale factors\n";
+    ptZSF_ = (ScaleFactor *) GetInputList()->FindObject("ptZ_N3LLCorr");
+    if (ptZSF_ == nullptr && name_.find("N3LLCorr") != std::string::npos) 
+        std::invalid_argument("Must pass pt correction SF");
+    else if (ptZSF_ == nullptr) 
+        std::invalid_argument("Must pass pt correction SF");
+}
+
 void NanoGenSelectorBase::buildHessian2MCSet() {
     double pdfWeights[N_LHEPDF_WEIGHTS_];
 //    for (size_t i = 0; i < N_LHEPDF_WEIGHTS_; i++) {

@@ -48,7 +48,7 @@ def getComLineArgs():
         default="default", help="Year of Analysis")
     parser.add_argument('-db', "--debug_level", type=str,
         default="INFO", help="Debug for logger (default is info) [INFO, DEBUG, WARNING]")
-    parser.add_argument("--scaleFactor", "-sf", action='store_true', help="Apply Scale Factors")
+    parser.add_argument("--noScaleFactors", action='store_true', help="Don't apply scale Factors")
     parser.add_argument("-c", "--channels", 
                         type=lambda x : [i.strip() for i in x.split(',')],
                         default=["eee","eem","emm","mmm"], help="List of channels"
@@ -76,40 +76,17 @@ def makeHistFile(args):
         tmpFileName = out[-1]
         outFolder = '/'.join(out[:-1])
     toCombine = args['with_background'] 
-    fOut = ROOT.TFile(tmpFileName if not toCombine else tmpFileName.replace(".root", "sel.root"), "recreate")
+    fOut = ROOT.TFile(tmpFileName if not toCombine else tmpFileName.replace(".root", "se,2l.root"), "recreate")
     combinedNames = [fOut.GetName()]
 
-    addScaleFacs = False
-    if args['analysis'] == "WZxsec2016" or args['analysis'] == 'Zstudy_2016':
-        addScaleFacs = True
-    addScaleFacs=False
-    fr_inputs = []
-    sf_inputs = [ROOT.TParameter(bool)("applyScaleFacs", False)]
 
-    if addScaleFacs:
-        fScales = ROOT.TFile('data/scaleFactors.root')
-        mCBTightFakeRate = fScales.Get("mCBTightFakeRate")
-        eCBTightFakeRate = fScales.Get("eCBTightFakeRate")
+    sf_file = 'data/%s_scaleFactors.root' % args['analysis']
+    addScaleFactors = os.path.isfile(sf_file) and not args['noScaleFactors']
+    sf_inputs = [ROOT.TParameter(bool)("applyScaleFacs", addScaleFactors)]
 
-        muonIsoSF = fScales.Get('muonIsoSF')
-        muonIdSF = fScales.Get('muonMediumIdSF')
-        electronTightIdSF = fScales.Get('electronTightIdSF')
-        electronGsfSF = fScales.Get('electronGsfSF')
-        pileupSF = fScales.Get('pileupSF')
-        
-        #fPrefireEfficiency = ROOT.TFile('data/Map_Jet_L1FinOReff_bxm1_looseJet_JetHT_Run2016B-H.root')
-        #fPrefireEfficiency = ROOT.TFile('data/Map_Jet_L1FinOReff_bxm1_looseJet_SingleMuon_Run2016B-H.root')
-        # prefireEff = fPrefireEfficiency.Get('prefireEfficiencyMap')
-
-        bScales = ROOT.TFile('data/BEff.root')
-        bScales.SetName("BScales")
-        
-#        fr_inputs = [eCBTightFakeRate, mCBTightFakeRate,]
-        fr_inputs = []
-        sf_inputs = [electronTightIdSF, electronGsfSF, muonIsoSF, muonIdSF, pileupSF, bScales]
-        sf_inputs.append(ROOT.TParameter(bool)("applyScaleFacs", True))
-    else:
-        sf_inputs = [ROOT.TParameter(bool)("applyScaleFacs", args['scaleFactor'])]    
+    fScales = ROOT.TFile(sf_file) if addScaleFactors else None
+    if fScales:
+        map(lambda x: sf_inputs.append(fScales.Get(x.GetName())), fScales.GetListOfKeys())
 
     if args['input_tier'] == '':
         args['input_tier'] = args['selection']

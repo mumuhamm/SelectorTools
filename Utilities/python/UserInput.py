@@ -40,6 +40,8 @@ def getDefaultParser(allow_from_file=True):
     return parser
 
 def getRebin(args):
+    if not args:
+        return None
     vals = args.split(":")
     x = [float(i.strip()) for i in vals]
     return [x[0]+x[2]*i for i in range(int((x[1]-x[0])/x[2]))]

@@ -141,6 +141,10 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         channelName_ = "Unknown";
         return;
     }
+
+    if (name_.find("N3LLCorr") != std::string::npos) {
+        weight *= ptZSF_->Evaluate1D(ptVlhe);
+    }
 }
 
 void WGenSelector::SetComposite() {

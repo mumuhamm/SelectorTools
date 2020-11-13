@@ -24,6 +24,7 @@
 
 class NanoGenSelectorBase : public SelectorBase {
 public :
+    ScaleFactor* ptZSF_;
     PDFWeightsHelper pdfweightshelper_;
     // Derived values
     reco::GenParticleCollection leptons;
@@ -150,6 +151,7 @@ public :
     
     // Readers to access the data (delete the ones you do not need).
     virtual void    Init(TTree *tree) override;
+    virtual void    SetScaleFactors() override;
     NanoGenSelectorBase(TTree * /*tree*/ =0) { }
     ~NanoGenSelectorBase() { }
     virtual void    SetupNewDirectory() override;
