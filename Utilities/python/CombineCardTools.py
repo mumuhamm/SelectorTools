@@ -358,7 +358,12 @@ class CombineCardTools(object):
         if not weightHist:
             raise ValueError("Failed to find %s. Skipping" % weighthist_name)
         var = self.theoryVariations[processName][varName]
-        hists,name = HistTools.getLHEWeightHists(weightHist, var['entries'], "", varName)
+        if not self.isUnrolledFit:
+            hists,name = HistTools.getLHEWeightHists(weightHist, var['entries'], "", varName)
+        else:
+            hists,name = HistTools.getTransformed3DLHEHists(weightHist, HistTools.makeUnrolledHist,
+                [self.unrolledBinsX, self.unrolledBinsY], var['entries'], "", varName)
+
         hists[0].SetName(name)
         hists[1].SetName(name.replace("Up", "Down"))
         return hists

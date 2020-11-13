@@ -37,7 +37,7 @@ void WGenSelector::Init(TTree *tree)
         systematics_[muonScaleDown] = "CMS_scale_mDown";
     }
 
-    systHists_ = {"ptl", "mW", "mTtrue", "yW", "ptW"};
+    systHists_ = {"ptl", "mW", "yW", "ptW"};
     systHists2D_ = hists2D_;
 
     weighthists1D_ = systHists_;

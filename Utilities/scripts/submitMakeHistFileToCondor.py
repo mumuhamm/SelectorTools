@@ -159,7 +159,7 @@ def writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist
         "filelist" : filelist.split(".txt")[0],
         "nPerJob" : nPerJob,
         "nJobs" : int(math.ceil(float(numfiles)/nPerJob)),
-        "extraArgs" : "--debug" if not selArgs else ("--debug --selectorArgs %s" % " ".join(selArgs))
+        "extraArgs" : "--debug --compress %s" % ("" if not selArgs else ("--selectorArgs "+" ".join(selArgs)))
     }
 
     template = "Templates/CondorSubmit/submit_template.jdl"

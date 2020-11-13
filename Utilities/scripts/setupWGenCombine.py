@@ -76,7 +76,7 @@ if args.rebin:
 cardtool.setFitVariable(args.fitvar)
 if "unrolled" in args.fitvar:
     #cardtool.setUnrolled([-2.5+0.2*i for i in range(0,26)], range(26, 56, 1))
-    cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 1))
+    cardtool.setUnrolled([-2.4+0.2*i for i in range(0,25)], range(26, 57, 1))
     #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(args.channels)

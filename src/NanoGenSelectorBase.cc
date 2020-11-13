@@ -10,6 +10,8 @@ void NanoGenSelectorBase::Init(TTree *tree)
     refWeight = 1;
     TParameter<bool>* doTheory = (TParameter<bool>*) GetInputList()->FindObject("theoryUnc");
     doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
+    TParameter<bool>* theoryPrefsr = (TParameter<bool>*) GetInputList()->FindObject("theoryPrefsr");
+    bool doTheoryPrefsr = theoryPrefsr != nullptr && theoryPrefsr->GetVal();
     TParameter<bool>* lhePart = (TParameter<bool>*) GetInputList()->FindObject("lhe");
     doLHE_ = lhePart != nullptr && lhePart->GetVal();
     TParameter<bool>* prefsrPart = (TParameter<bool>*) GetInputList()->FindObject("prefsr");
@@ -37,8 +39,10 @@ void NanoGenSelectorBase::Init(TTree *tree)
 
     if (doTheoryVars_) {
         theoryVarSysts_.insert(theoryVarSysts_.begin(), Central);
-        theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
+    }
+    if (doTheoryPrefsr) {
         theoryVarSysts_.insert(theoryVarSysts_.end(), PreFSRLeptons);
+        //theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
     }
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");

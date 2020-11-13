@@ -231,7 +231,12 @@ def getListOfFiles(filelist, selection, manager_path="", analysis=""):
         raise RuntimeError("No processes found matching pattern '%s'" % filelist)
     return [str(i) for i in names]
 
-def getXrdRedirector():
+def getXrdRedirector(filepath=None):
+    if "eos/cms" in filepath:
+        return "eoscms.cern.ch"
+    elif "eos/user" in filepath:
+        return "eosuser.cern.ch"
+
     usbased = ["wisc.edu"]
     usredir = 'cmsxrootd.fnal.gov'
     globalredir = 'cms-xrd-global.cern.ch'

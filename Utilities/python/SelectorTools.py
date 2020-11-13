@@ -52,6 +52,7 @@ class SelectorDriver(object):
         self.maxEntries = -1
         self.maxFiles = -1
         self.nProcessed = 0
+        self.compress = False
 
     # Needed to parallelize class member function, see
     # https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map
@@ -77,6 +78,15 @@ class SelectorDriver(object):
     def outputFile(self):
         return self.outfile
     
+    def setCompress(self, compress):
+        self.compress = compress
+
+    def updateCurrentFile(self, currfile_name):
+        self.current_file = ROOT.TFile.Open(currfile_name, "update")
+        if self.compress:
+            self.current_file.SetCompressionAlgorithm(2)
+            self.current_file.SetCompressionLevel(5)
+    
     def setOutputfile(self, outfile_name):
         if self.outfile:
             self.outfile.Close()
@@ -84,6 +94,10 @@ class SelectorDriver(object):
         self.outfile = ROOT.gROOT.FindObject(outfile_name)
         if not self.outfile:
             self.outfile = ROOT.TFile.Open(outfile_name, "recreate")
+        if self.compress:
+            self.outfile.SetCompressionAlgorithm(2)
+            self.outfile.SetCompressionLevel(5)
+
         self.current_file = self.outfile
 
     def addTNamed(self, name, title):
@@ -238,7 +252,7 @@ class SelectorDriver(object):
                 sumweights_hist = ROOT.TH1D("sumweights", "sumweights", 1000, 0, 1000)
             sumweights_hist.SetDirectory(ROOT.gROOT)
             if currfile_name:
-                self.current_file = ROOT.TFile.Open(currfile_name, "update")
+                self.updateCurrentFile(currfile_name)
         self.processLocalFiles(file_path, addSumweights, chan)
         self.collectOutput(dataset, chan)
 
@@ -259,7 +273,7 @@ class SelectorDriver(object):
         if self.numCores > 1:
             self.outfile.Close()
             chanNum = self.channels.index(chan)
-            self.current_file = ROOT.TFile.Open(self.tempfileName(), "update")
+            self.updateCurrentFile(self.tempfileName())
         if not self.current_file:
             self.current_file = ROOT.TFile.Open(self.outfile_name)
 
@@ -291,7 +305,7 @@ class SelectorDriver(object):
                 % file_path)
 
         if (xrootd and not xrootd_user):
-            xrd = 'root://%s/' % ConfigureJobs.getXrdRedirector()
+            xrd = 'root://%s/' % ConfigureJobs.getXrdRedirector(file_path)
             allfiles = glob.glob(file_path) 
             if not allfiles:
                 return [xrd + file_path]

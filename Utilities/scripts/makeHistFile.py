@@ -25,6 +25,8 @@ def getComLineArgs():
         default="test.root", help="Output file name")
     parser.add_argument("--debug", action='store_true',
         help="Print verbose info")
+    parser.add_argument("--compress", action='store_true',
+        help="Use more agressive compression of output")
     ntuple_group = parser.add_mutually_exclusive_group(required=False)
     ntuple_group.add_argument("--uwvv", action='store_true',
         help="Use UWVV format ntuples in stead of NanoAOD")
@@ -119,6 +121,8 @@ def makeHistFile(args):
             [ROOT.TParameter(int)(x.split("=")[0], int(x.split("=")[1])) for x in args['selectorArgs']]
 
     selector = SelectorTools.SelectorDriver(args['analysis'], args['selection'], args['input_tier'], args['year'])
+    if args['compress']:
+        selector.setCompress(True)
     selector.setNumCores(args['numCores'])
     selector.setOutputfile(fOut.GetName())
     selector.setInputs(sf_inputs+hist_inputs+extra_inputs)
