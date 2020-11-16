@@ -20,6 +20,7 @@ class CombineCardTools(object):
         self.correlateScaleUnc = False
         self.channels = []
         self.variations = {}
+        self.normalizedVariations = []
         self.perbinVariations = {}
         self.rebin = None
         self.isMC = True
@@ -66,14 +67,18 @@ class CombineCardTools(object):
     def setFitVariable(self, variable):
         self.fitVariable = variable
 
-    def setVariations(self, variations, exclude=[]):
+    def setNormalizedVariations(self, variations, exclude=[]):
+        self.normalizedVariations = variations
+        self.setVariations(variations, exclude, True)
+
+    def setVariations(self, variations, exclude=[], extend=False):
         if not self.processes:
             raise ValueError("No processes defined, can't set variations")
         for process in self.processes.keys():
             if process in exclude:
-                self.setVariationsByProcess(process, [])
+                self.setVariationsByProcess(process, [], extend)
                 continue
-            self.setVariationsByProcess(process, variations)
+            self.setVariationsByProcess(process, variations, extend)
 
     def getVariations(self):
         return self.variations
@@ -83,10 +88,13 @@ class CombineCardTools(object):
             raise ValueError("Variations not defined for process %s" % process)
         return self.variations[process]
 
-    def setVariationsByProcess(self, process, variations):
+    def setVariationsByProcess(self, process, variations, extend=False):
         if "Up" not in variations and "Down" not in variations:
             variations = [x+y for x in variations for y in ["Up", "Down"]]
-        self.variations[process] = variations
+        if not extend:
+            self.variations[process] = variations
+        else:
+            self.variations[process].extend(variations)
 
     def weightHistName(self, channel, process, append=""):
         fitVariable = self.getFitVariable(process)
@@ -208,14 +216,13 @@ class CombineCardTools(object):
         variations = self.variations[group.GetName()][:]
         fitVariable = self.getFitVariable(group.GetName())
         if central:
-            variations.append("")
+            variations.insert(0, "")
         for label, channels in self.channelsToCombine.iteritems():
             if label not in self.yields:
                 self.yields[label] = {}
             for var in variations:
                 name = "_".join([fitVariable, var]) if var != "" else fitVariable
                 hist_name = name + "_" + channels[0]
-                tmphist = group.FindObject(hist_name)
                 if not tmphist:
                     logging.warning("Failed to find hist %s in group %s. Skipping" % (hist_name, group.GetName()))
                     continue
@@ -246,6 +253,7 @@ class CombineCardTools(object):
 
     # processName needs to match a PlotGroup 
     def loadHistsForProcess(self, processName, scaleNorm=1, expandedTheory=True):
+        fitVariable = self.getFitVariable(processName)
         plotsToRead = self.listOfHistsByProcess(processName, nameReplace=("unrolled", "2D"))
 
         group = HistTools.makeCompositeHists(self.inputFile, processName, 
@@ -260,7 +268,6 @@ class CombineCardTools(object):
                 histName = hist.GetName()
                 group.Add(hist)
 
-        fitVariable = self.getFitVariable(processName)
         #TODO:Make optional
         processedHists = []
         for chan in self.channels:
@@ -342,6 +349,16 @@ class CombineCardTools(object):
                         theoryVarLabels.extend(re.findall("_".join([fitvar, "(.*QCDscale.*)", chan]), h.GetName()))
                     self.variations[processName].extend(set(theoryVarLabels))
 
+                normVarNames = []
+                map(lambda x: normVarNames.extend([x+"Up", x+"Down"]), self.normalizedVariations)
+                for normvar in normVarNames:
+                    varHistName = histName.replace(chan, "_".join([normvar, chan]))
+                    hist = group.FindObject(varHistName)
+                    if not hist:
+                        logging.warning("Failed to find hist %s in group %s. Skipping" % (varHistName, group.GetName()))
+                        continue
+                    hist.Scale(self.yields[chan][processName]/hist.Integral())
+
         if self.addOverflow:
             map(HistTools.addOverflow, filter(lambda x: (x.GetName() not in processedHists), group))
         if self.removeZeros and "data" not in group.GetName().lower():
@@ -351,7 +368,7 @@ class CombineCardTools(object):
             self.combineChannels(group, processName)
 
         self.histData[processName] = group
-
+        
     def lheVarHistsForProcess(self, group, processName, chan, varName):
         weighthist_name = self.weightHistName(chan, processName)
         weightHist = group.FindObject(weighthist_name)
@@ -363,9 +380,17 @@ class CombineCardTools(object):
         else:
             hists,name = HistTools.getTransformed3DLHEHists(weightHist, HistTools.makeUnrolledHist,
                 [self.unrolledBinsX, self.unrolledBinsY], var['entries'], "", varName)
+        
+        # In this case, should be central, varCentral, varUp, varDown
+        if len(var['entries']) == 4:
+            for i in range(hists[0].GetNbinsX()+1):
+                central_ratio = hists[0].GetBinContent(i)/hists[1].GetBinContent(i) if hists[1].GetBinContent(i) > 0 else 1
+                hists[2].SetBinContent(i, hists[2].GetBinContent(i)*central_ratio)
+                hists[3].SetBinContent(i, hists[3].GetBinContent(i)*central_ratio)
+            hists = [hists[2], hists[3]]
 
-        hists[0].SetName(name)
-        hists[1].SetName(name.replace("Up", "Down"))
+        hists[0] = HistTools.rebinHist(hists[0], name, self.rebin)
+        hists[1] = HistTools.rebinHist(hists[1], name.replace("Up", "Down"), self.rebin)
         return hists
 
     def scaleHistsForProcess(self, group, processName, chan, expandedTheory, append=""):

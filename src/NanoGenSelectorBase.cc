@@ -132,6 +132,9 @@ void NanoGenSelectorBase::SetBranchesNanoAOD() {
             b.SetSpecificBranch("n"+name, nLHEPdfWeights.at(i));
             b.SetSpecificBranch(name, LHEPdfWeights[i]);
         }
+        else {
+            nLHEPdfWeights.at(i) = 0;
+        }
     }
     if (unknownWeights_) {
         b.SetSpecificBranch("nLHEUnknownWeight", nLHEUnknownWeight);
@@ -401,11 +404,9 @@ reco::GenParticle NanoGenSelectorBase::makeGenParticle(int pdgid, int status, fl
 }
 
 void NanoGenSelectorBase::SetScaleFactors() {
-    std::cout << "Setting scale factors\n";
     ptZSF_ = (ScaleFactor *) GetInputList()->FindObject("ptZ_N3LLCorr");
-    if (ptZSF_ == nullptr && name_.find("N3LLCorr") != std::string::npos) 
-        std::invalid_argument("Must pass pt correction SF");
-    else if (ptZSF_ == nullptr) 
+    ptWSF_ = (ScaleFactor *) GetInputList()->FindObject("ptZ_N3LLCorr");
+    if (ptWSF_ == nullptr && ptZSF_ == nullptr && name_.find("N3LLCorr") != std::string::npos) 
         std::invalid_argument("Must pass pt correction SF");
 }
 
@@ -420,10 +421,12 @@ void NanoGenSelectorBase::buildHessian2MCSet() {
 double NanoGenSelectorBase::breitWignerWeight(double offset) {
 
     double targetMass = MV_GEN_ + offset;
+    double gamma_cen = std::sqrt(MV_GEN_*MV_GEN_*(MV_GEN_*MV_GEN_+GAMMAV_GEN_*GAMMAV_GEN_));
+    double gamma = std::sqrt(targetMass*targetMass*(targetMass*targetMass+GAMMAV_GEN_*GAMMAV_GEN_));
     double s_hat = mVlhe*mVlhe;
     double offshell = s_hat - MV_GEN_*MV_GEN_;
     double offshellOffset = s_hat - targetMass*targetMass;
-    double weight = (offshell*offshell + GAMMAV_GEN_*GAMMAV_GEN_*MV_GEN_*MV_GEN_)/
+    double weight = kratio*(offshell*offshell + GAMMAV_GEN_*GAMMAV_GEN_*MV_GEN_*MV_GEN_)/
             (offshellOffset*offshellOffset + GAMMAV_GEN_*GAMMAV_GEN_*targetMass*targetMass);
     return weight;
 }

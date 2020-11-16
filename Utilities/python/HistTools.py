@@ -334,7 +334,7 @@ def getTransformed3DLHEHists(hist3D, transformation, transform_args, entries, na
     hists = getAllTransformed3DHists(hist3D, transformation, transform_args, name, entries)
     hist_name = hist3D.GetName().replace("2D", "unrolled")
     hist_name = hist_name.replace("lheWeights", varName+("_" if name != "" else "")+name+"Up")
-    return getVariationHists(hists, name, hist_name, lambda x: x[0], lambda x: x[1]), hist_name
+    return hists, hist_name
 
 def getTransformed3DScaleHists(scale_hist3D, transformation, transform_args, name, entries=range(1,10), exclude=[7,9]):
     scale_hists = getAllTransformed3DHists(scale_hist3D, transformation, transform_args, name, entries, exclude)

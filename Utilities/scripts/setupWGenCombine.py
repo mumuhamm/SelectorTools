@@ -83,8 +83,10 @@ cardtool.setChannels(args.channels)
 print "Channels are", args.channels
 cardtool.setCrosSectionMap(xsecs)
 
-variations = [] if args.theoryOnly else ["mWBWShift100MeV", "mWBWShift50MeV", "CMS_scale_m"] 
+variations = [] if args.theoryOnly else ["CMS_scale_m"] 
 cardtool.setVariations(variations)
+normVariations = [] if args.theoryOnly else ["mWBWShift100MeV", "mWBWShift50MeV"] 
+cardtool.setNormalizedVariations(normVariations)
 
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
 cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
@@ -110,8 +112,13 @@ for process in plot_groups:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
         # NNPDF3.0 scale unc
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0, specName="NNPDF30")
-        cardtool.addTheoryVar(process, 'other', [922+5,922-5], exclude=[], central=0, specName="massShift50MeV")
-        cardtool.addTheoryVar(process, 'other', [922+10,922-10], exclude=[], central=0, specName="massShift100MeV")
+        cenMassIdx = 919
+        #massVars = lambda i: [1, cenMassIdx, cenMassIdx+i, cenMassIdx-i]
+        massVars = lambda i: [cenMassIdx+i, cenMassIdx-i]
+        cardtool.addTheoryVar(process, 'other', massVars(0), exclude=[], central=0, specName="massShift0MeV")
+        cardtool.addTheoryVar(process, 'other', massVars(1), exclude=[], central=0, specName="massShift10MeV")
+        cardtool.addTheoryVar(process, 'other', massVars(5), exclude=[], central=0, specName="massShift50MeV")
+        cardtool.addTheoryVar(process, 'other', massVars(10), exclude=[], central=0, specName="massShift100MeV")
         if not args.noPdf:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(19, 120), central=0, specName="NNPDF31")

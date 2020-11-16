@@ -1,6 +1,6 @@
 # coding: utf-8
 import ROOT
-chan = "mm"
+chan = "mn"
 resum = True
 fiducial = True
 variables = {
@@ -19,14 +19,6 @@ variables = {
 }
 pdf = "31"
 outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_EWParamMatch_NNPDF%s.root" % pdf
-
-if resum:
-    variables = {
-        "ptZ" : { "histname" : "RadISH_observable_binning2",
-            "rebinScale" : 0.001,
-        },
-    }
-    outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_RadISH_MatchEWParams_NNPDF%s.root" % pdf
 
 if chan != "mm":
     outfile_name = "/eos/user/k/kelong/HistFiles/WGen/NoSelection/WpToMuNu_MATRIX_EWParamMatch_NNPDF%s.root" % pdf
@@ -48,6 +40,23 @@ if chan != "mm":
             "rebinScale" : 0.001,
         },
     }
+
+if resum:
+    if chan == "mm":
+        variables = {
+            "ptZ" : { "histname" : "RadISH_observable_binning2",
+                "rebinScale" : 0.001,
+            },
+        }
+        outfile_name = "/eos/user/k/kelong/HistFiles/ZGen/NoSelection/ZToMuMu_MATRIX_RadISH_MatchEWParams_NNPDF%s.root" % pdf
+    else:
+        variables = {
+            "ptW" : { "histname" : "RadISH_observable_binning2",
+                "rebinScale" : 0.001,
+            },
+        }
+        outfile_name = "/eos/user/k/kelong/HistFiles/WGen/NoSelection/WmToMuNu_MATRIX_RadISH_MatchEWParams_NNPDF%s.root" % pdf
+
 
 if fiducial:
     outfile_name = outfile_name.replace("/NoSelection", "")
@@ -86,11 +95,14 @@ for order in ["NNLO", ]:
     outfile.mkdir(process)
     for key, value in variables.iteritems():
         proc = process
-        if resum and key == "ptZ":
+        if resum and "pt" in key:
             proc = process + "__radish"
             outfile.mkdir(proc)
             file_path = "/eos/user/k/kelong/MatrixFiles/Radish"
+            if chan != "mm" and fiducial:
+                file_path = file_path + "/Wm_Fiducial"
             order += "+N3LL"
+        print file_path
         name = "%s__%s_QCD" % (value["histname"], order.split("_")[0])
         if resum:
             name = name.replace("_QCD", "")
@@ -100,7 +112,7 @@ for order in ["NNLO", ]:
         downhist = rtfile.Get("canvas").GetListOfPrimitives().FindObject(name+"__scaleDown")
         outfile.cd(proc)
         basevars = ["QCDscale_"+proc+"Up", "QCDscale_"+proc+"Down",]
-        variations = basevars + ["lhe"] + ["lhe_"+v for v in basevars]
+        variations = basevars + ["", "lhe"] + ["lhe_"+v for v in basevars]
         
         for var in variations:
             new_name = "_".join([key, chan] if var == "" else [key, var, chan])

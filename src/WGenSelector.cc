@@ -9,8 +9,16 @@
 
 void WGenSelector::Init(TTree *tree)
 {
+    // Don't waste memory on empty e hists
+    TParameter<bool>* muOnlyParam = (TParameter<bool>*) GetInputList()->FindObject("muOnly");
+    bool muOnly = muOnlyParam != nullptr && muOnlyParam->GetVal();
+    allChannels_ = {{mp, "mp"}, {mn, "mn"}}; 
+    if (!muOnly) {
+        allChannels_.push_back(std::make_pair<Channel, std::string>(ep, "ep"));
+        allChannels_.push_back(std::make_pair<Channel, std::string>(en, "en"));
+    }
+
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
-    allChannels_ = {{ep, "ep"}, {en, "en"}, {mp, "mp"}, {mn, "mn"}};
     hists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
         "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi",
         "ptj1", "ptj2", "etaj1", "etaj2", "nJets",
@@ -37,7 +45,7 @@ void WGenSelector::Init(TTree *tree)
         systematics_[muonScaleDown] = "CMS_scale_mDown";
     }
 
-    systHists_ = {"ptl", "mW", "yW", "ptW"};
+    systHists_ = {"ptl", "yW", "ptW"};
     systHists2D_ = hists2D_;
 
     weighthists1D_ = systHists_;
@@ -143,7 +151,7 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     }
 
     if (name_.find("N3LLCorr") != std::string::npos) {
-        weight *= ptZSF_->Evaluate1D(ptVlhe);
+        weight *= ptWSF_->Evaluate1D(ptVlhe);
     }
 }
 
@@ -216,9 +224,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
         size_t nScaleWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1;
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nMEParamWeight;
-        size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 1);
+        size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 0);
 
-        size_t nWeights = minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1+allPdfWeights;
+        size_t nWeights = variation.first == Central ? minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1+allPdfWeights : nScaleWeights; 
         size_t pdfOffset = nScaleWeights;
         size_t pdfIdx = 0;
         for (size_t i = 0; i < nWeights; i++) {
@@ -233,8 +241,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
                     pdfOffset += nLHEPdfWeights.at(pdfIdx++);
                 }
             }
-            else if (i >= nScaleWeights+allPdfWeights-1) {
-                thweight = MEParamWeight[i-nLHEScaleWeight-allPdfWeights];
+            else {
+                float corr = LHEScaleWeight[0]/MEParamWeight[10];
+                thweight = MEParamWeight[i-nLHEScaleWeight-allPdfWeights]*corr;
             }
             //TODO: This is broken
             //else if (i < minimalWeights-nLHEUnknownWeightAltSet1)

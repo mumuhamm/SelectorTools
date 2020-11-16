@@ -7,7 +7,13 @@
 
 void ZGenSelector::Init(TTree *tree)
 {
-    allChannels_ = {{ee, "ee"}, {mm, "mm"}};
+    // Don't waste memory on empty e hists
+    TParameter<bool>* muOnlyParam = (TParameter<bool>*) GetInputList()->FindObject("muOnly");
+    bool muOnly = muOnlyParam != nullptr && muOnlyParam->GetVal();
+    allChannels_ = {{mm, "mm"}}; 
+    if (!muOnly) {
+        allChannels_.push_back(std::make_pair<Channel, std::string>(ee, "ee"));
+    }
     // Add CutFlow for Unknown to understand when channels aren't categorized
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
     std::vector<std::string> basehists1D = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
@@ -169,13 +175,6 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
                     pdfOffset += nLHEPdfWeights.at(pdfIdx++);
                 }
             }
-            //TODO: This is broken
-            else if (i < minimalWeights-nLHEUnknownWeightAltSet1)
-                thweight = LHEUnknownWeight[i-minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1];
-            else if (i < minimalWeights)
-                thweight = LHEUnknownWeightAltSet1[i-minimalWeights+nLHEUnknownWeightAltSet1];
-            else 
-                thweight = LHEPdfWeight[i-minimalWeights];
 
             if (centralWeightIndex_ != -1 && scaleWeights_)
                 thweight /= LHEScaleWeight[centralWeightIndex_];

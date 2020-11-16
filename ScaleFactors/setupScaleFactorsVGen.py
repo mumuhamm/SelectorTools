@@ -16,6 +16,7 @@ def getHist(rtfile, dataset, histname, xsec, rebin):
 
     if rebin:
         hist = HistTools.rebinHist(hist, histname+"rebin", rebin)
+    print "Dataset", dataset, "Integral is", hist.Integral()
     return hist
 
 parser = argparse.ArgumentParser()
