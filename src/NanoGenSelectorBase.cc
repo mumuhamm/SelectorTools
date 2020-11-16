@@ -405,7 +405,7 @@ reco::GenParticle NanoGenSelectorBase::makeGenParticle(int pdgid, int status, fl
 
 void NanoGenSelectorBase::SetScaleFactors() {
     ptZSF_ = (ScaleFactor *) GetInputList()->FindObject("ptZ_N3LLCorr");
-    ptWSF_ = (ScaleFactor *) GetInputList()->FindObject("ptZ_N3LLCorr");
+    ptWSF_ = (ScaleFactor *) GetInputList()->FindObject("ptW_N3LLCorr");
     if (ptWSF_ == nullptr && ptZSF_ == nullptr && name_.find("N3LLCorr") != std::string::npos) 
         std::invalid_argument("Must pass pt correction SF");
 }
@@ -421,12 +421,12 @@ void NanoGenSelectorBase::buildHessian2MCSet() {
 double NanoGenSelectorBase::breitWignerWeight(double offset) {
 
     double targetMass = MV_GEN_ + offset;
-    double gamma_cen = std::sqrt(MV_GEN_*MV_GEN_*(MV_GEN_*MV_GEN_+GAMMAV_GEN_*GAMMAV_GEN_));
-    double gamma = std::sqrt(targetMass*targetMass*(targetMass*targetMass+GAMMAV_GEN_*GAMMAV_GEN_));
+    //double gamma_cen = std::sqrt(MV_GEN_*MV_GEN_*(MV_GEN_*MV_GEN_+GAMMAV_GEN_*GAMMAV_GEN_));
+    //double gamma = std::sqrt(targetMass*targetMass*(targetMass*targetMass+GAMMAV_GEN_*GAMMAV_GEN_));
     double s_hat = mVlhe*mVlhe;
     double offshell = s_hat - MV_GEN_*MV_GEN_;
     double offshellOffset = s_hat - targetMass*targetMass;
-    double weight = kratio*(offshell*offshell + GAMMAV_GEN_*GAMMAV_GEN_*MV_GEN_*MV_GEN_)/
+    double weight = (offshell*offshell + GAMMAV_GEN_*GAMMAV_GEN_*MV_GEN_*MV_GEN_)/
             (offshellOffset*offshellOffset + GAMMAV_GEN_*GAMMAV_GEN_*targetMass*targetMass);
     return weight;
 }

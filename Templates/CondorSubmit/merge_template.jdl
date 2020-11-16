@@ -3,7 +3,8 @@ Executable           = merge.sh
 GetEnv               = false
 
 ShouldTransferFiles  = yes
-request_memory       = 4000
+request_memory       = 2000
+request_cpus         = 8
 request_disk         = 2048000
 use_x509userproxy = True
 

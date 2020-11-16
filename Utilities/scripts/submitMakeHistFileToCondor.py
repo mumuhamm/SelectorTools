@@ -29,6 +29,8 @@ def getComLineArgs():
                         help="Use local files, e.g., file_path")
     parser.add_argument("--input_tier", type=str,
         default="", help="Selection stage of input files")
+    parser.add_argument("--memory", type=int,
+        default=2000, help="Memory to request for condor jobs")
     parser.add_argument("-q", "--queue", type=str,
         default="longlunch", help="lxplus queue, or 'uw' for wisconsin settings")
     parser.add_argument("-m", "--merge", nargs=2, type=str,
@@ -150,12 +152,13 @@ def getUWCondorSettings():
         Requirements         = TARGET.Arch == "X86_64" && IsSlowSlot=!=true && (MY.RequiresSharedFS=!=true || TARGET.HasAFS_OSG) && (TARGET.HasParrotCVMFS=?=true || (TARGET.UWCMS_CVMFS_Exists  && TARGET.CMS_CVMFS_Exists))
     """
 
-def writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist, numfiles, nPerJob, selArgs):
+def writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, memory, filelist, numfiles, nPerJob, selArgs):
     template_dict = {
         "analysis" : analysis,
         "selection" : selection,
         "input_tier" : input_tier,
         "queue" : queue,
+        "memory" : memory,
         "filelist" : filelist.split(".txt")[0],
         "nPerJob" : nPerJob,
         "nJobs" : int(math.ceil(float(numfiles)/nPerJob)),
@@ -182,7 +185,7 @@ def writeMetaInfo(submit_dir, filename):
         metafile.write("git hash: " + OutputTools.gitHash()+"\n")
         metafile.write("git diff: " + OutputTools.gitDiff()+"\n")
 
-def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tier, queue, 
+def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tier, queue, memory,
         numPerJob, force, das, selArgs, merge, removeUnmerged):
     makeSubmitDir(submit_dir, force)
     copyLibs()
@@ -197,7 +200,7 @@ def submitDASFilesToCondor(filenames, submit_dir, analysis, selection, input_tie
     # it doesn't do anything if you aren't a member of CMST3 group
     queue = '+JobFlavour = "{0}"\n+AccountingGroup = "group_u_CMST3.all"'.format(queue) \
             if queue != 'uw' else getUWCondorSettings()
-    writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, filelist_name, numfiles, numPerJob, selArgs)
+    writeSubmitFile(submit_dir, analysis, selection, input_tier, queue, memory, filelist_name, numfiles, numPerJob, selArgs)
     if merge:
         setupMergeStep(submit_dir, queue, math.ceil(numfiles/numPerJob), merge, removeUnmerged)
 
@@ -210,7 +213,7 @@ def main():
     args = getComLineArgs()
     logging.basicConfig(level=(logging.DEBUG if args['debug'] else logging.INFO))
     submitDASFilesToCondor(args['filenames'], args['submit_dir'], args['analysis'], 
-        args['selection'], args['input_tier'], args['queue'], args['files_per_job'], args['force'], 
+        args['selection'], args['input_tier'], args['queue'], args['memory'], args['files_per_job'], args['force'], 
         not args['local'], args['selectorArgs'], args['merge'], args['removeUnmerged'])
     if args['submit']:
         command = 'condor_submit' if not args['merge'] else 'condor_submit_dag'

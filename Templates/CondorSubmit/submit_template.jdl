@@ -6,7 +6,7 @@ GetEnv               = false
 WhenToTransferOutput = On_Exit_Or_Evict
 ShouldTransferFiles  = yes
 want_graceful_removal = True 
-request_memory       = 2000
+request_memory       = ${memory}
 request_disk         = 2048000
 use_x509userproxy = True
 # stop jobs from running if they blow up in size or memory

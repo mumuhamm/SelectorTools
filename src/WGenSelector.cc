@@ -70,6 +70,10 @@ void WGenSelector::Init(TTree *tree)
         GAMMAV_GEN_ = 2050;
     }
 
+    if (name_.find("N3LLCorr") != std::string::npos) {
+        n3llcorr_ = true;
+    }
+
     NanoGenSelectorBase::Init(tree);
 }
 
@@ -150,7 +154,7 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         return;
     }
 
-    if (name_.find("N3LLCorr") != std::string::npos) {
+    if (n3llcorr_) {
         weight *= ptWSF_->Evaluate1D(ptVlhe);
     }
 }
