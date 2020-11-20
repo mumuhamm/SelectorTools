@@ -76,7 +76,8 @@ class CombineCardTools(object):
             raise ValueError("No processes defined, can't set variations")
         for process in self.processes.keys():
             if process in exclude:
-                self.setVariationsByProcess(process, [], extend)
+                if not extend:
+                    self.setVariationsByProcess(process, [], extend)
                 continue
             self.setVariationsByProcess(process, variations, extend)
 
@@ -89,8 +90,7 @@ class CombineCardTools(object):
         return self.variations[process]
 
     def setVariationsByProcess(self, process, variations, extend=False):
-        if "Up" not in variations and "Down" not in variations:
-            variations = [x+y for x in variations for y in ["Up", "Down"]]
+        variations = [x+y if y not in x else x for x in variations for y in ["Up", "Down"]]
         if not extend:
             self.variations[process] = variations
         else:

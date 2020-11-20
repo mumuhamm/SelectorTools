@@ -108,8 +108,6 @@ ptbinPairs = [(x,y) for x,y in zip(ptbins[:-1], ptbins[1:])]
 for process in plot_groups:
     if "matrix" in process:
         cardtool.setVariations(variations+["QCDscale_"+process])
-    else:
-        cardtool.setVariations(variations)
     #Turn this back on when the theory uncertainties are added
     if "minnlo" in process:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
