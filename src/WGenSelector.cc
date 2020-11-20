@@ -246,8 +246,8 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
                 }
             }
             else {
-                float corr = LHEScaleWeight[0]/MEParamWeight[10];
-                thweight = MEParamWeight[i-nLHEScaleWeight-allPdfWeights]*corr;
+                //float corr = LHEScaleWeight[0]/MEParamWeight[10];
+                thweight = MEParamWeight[i-nLHEScaleWeight-allPdfWeights];
             }
             //TODO: This is broken
             //else if (i < minimalWeights-nLHEUnknownWeightAltSet1)

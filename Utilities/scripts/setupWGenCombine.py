@@ -30,6 +30,8 @@ parser.add_argument("-l", "--lumi", type=float,
     default=35.9*0.7, help="lumi")
 parser.add_argument("--noPdf", action='store_true', 
     help="don't add PDF uncertainties")
+parser.add_argument("--ssd", action='store_true', 
+    help="Write to /data/kelong, not /eos/user")
 parser.add_argument("--noPtVSplit", action='store_true', 
     help="Don't split scale uncertainties by pt(V)")
 parser.add_argument("--allHessianVars", action='store_true', 
@@ -89,7 +91,8 @@ normVariations = [] if args.theoryOnly else ["mWBWShift100MeV", "mWBWShift50MeV"
 cardtool.setNormalizedVariations(normVariations)
 
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
-cardtool.setOutputFolder("/eos/user/k/kelong/CombineStudies/WGen/%s" % folder_name)
+basefolder = "/data/kelong/" if args.ssd else "/eos/user/k/kelong"
+cardtool.setOutputFolder(basefolder+"/CombineStudies/WGen/%s" % folder_name)
 
 cardtool.setLumi(args.lumi)
 cardtool.setInputFile(args.input_file)
