@@ -113,13 +113,19 @@ for process in plot_groups:
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0)
         # NNPDF3.0 scale unc
         cardtool.addTheoryVar(process, 'scale', range(1, 10), exclude=[6, 8], central=0, specName="NNPDF30")
-        cenMassIdx = 919
+        isAltTh = "lhe" in args.fitvar or "prefsr" in args.fitvar
+        cenMassIdx = 919 if not isAltTh else 29
         #massVars = lambda i: [1, cenMassIdx, cenMassIdx+i, cenMassIdx-i]
         massVars = lambda i: [cenMassIdx+i, cenMassIdx-i]
         cardtool.addTheoryVar(process, 'other', massVars(0), exclude=[], central=0, specName="massShift0MeV")
         cardtool.addTheoryVar(process, 'other', massVars(1), exclude=[], central=0, specName="massShift10MeV")
+        cardtool.addTheoryVar(process, 'other', massVars(2), exclude=[], central=0, specName="massShift20MeV")
+        cardtool.addTheoryVar(process, 'other', massVars(3), exclude=[], central=0, specName="massShift30MeV")
         cardtool.addTheoryVar(process, 'other', massVars(5), exclude=[], central=0, specName="massShift50MeV")
         cardtool.addTheoryVar(process, 'other', massVars(10), exclude=[], central=0, specName="massShift100MeV")
+        width = (18+890+21+3) if not isAltTh else (18+21+3)
+        print(width)
+        cardtool.addTheoryVar(process, 'other', [width, width], exclude=[], central=0, specName="width2043")
         if not args.noPdf:
             # NNPDF3.1
             cardtool.addTheoryVar(process, 'pdf_hessian', range(19, 120), central=0, specName="NNPDF31")

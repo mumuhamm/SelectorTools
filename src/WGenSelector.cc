@@ -45,7 +45,7 @@ void WGenSelector::Init(TTree *tree)
         systematics_[muonScaleDown] = "CMS_scale_mDown";
     }
 
-    systHists_ = {"ptl", "yW", "ptW"};
+    systHists_ = {"ptl", "yW", "ptW", "mW"};
     systHists2D_ = hists2D_;
 
     weighthists1D_ = systHists_;
@@ -230,24 +230,24 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         size_t minimalWeights = nLHEScaleWeight+nLHEScaleWeightAltSet1+nMEParamWeight;
         size_t allPdfWeights = std::accumulate(nLHEPdfWeights.begin(), nLHEPdfWeights.end(), 0);
 
-        size_t nWeights = variation.first == Central ? minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1+allPdfWeights : nScaleWeights; 
+        size_t nWeights = variation.first == Central ? minimalWeights+nLHEUnknownWeight+nLHEUnknownWeightAltSet1+allPdfWeights : minimalWeights; 
         size_t pdfOffset = nScaleWeights;
         size_t pdfIdx = 0;
         for (size_t i = 0; i < nWeights; i++) {
             float thweight = 1;
             if (i < nLHEScaleWeight)
                 thweight = LHEScaleWeight[i];
-            else if (i < nScaleWeights)
+            else if (i < nScaleWeights && variation.first == Central)
                 thweight = LHEScaleWeightAltSet1[i-nLHEScaleWeight];
-            else if (i < nScaleWeights+allPdfWeights) {
+            else if (i < nScaleWeights+allPdfWeights && variation.first == Central) {
                 thweight = LHEPdfWeights[pdfIdx][i-pdfOffset];
                 if (i == pdfOffset+nLHEPdfWeights.at(pdfIdx)-1) {
                     pdfOffset += nLHEPdfWeights.at(pdfIdx++);
                 }
             }
             else {
-                //float corr = LHEScaleWeight[0]/MEParamWeight[10];
-                thweight = MEParamWeight[i-nLHEScaleWeight-allPdfWeights];
+                size_t offset = variation.first == Central ? nLHEScaleWeight+allPdfWeights : nLHEScaleWeight;
+                thweight = MEParamWeight[i-offset];
             }
             //TODO: This is broken
             //else if (i < minimalWeights-nLHEUnknownWeightAltSet1)

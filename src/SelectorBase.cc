@@ -339,7 +339,8 @@ void SelectorBase::InitializeHistogramFromConfig(std::string name, ChannelPair c
         if (std::find(theoryVarSysts_.begin(), theoryVarSysts_.end(), variation.first) != theoryVarSysts_.end()) {
             size_t pos = variation.first == Central ? name.size() : (name.size() + variation.second.size()+1);
             std::string weighthistName = histName.insert(pos, "_lheWeights");
-            int nweights = variation.first == Central ? 1000 : 20;
+            int nweights = variation.first == Central ? 1000 : 50;
+            //int nweights = 1000;
             if (is1D && std::find(weighthists1D_.begin(), weighthists1D_.end(), name) != weighthists1D_.end()) {
                 weighthistMap1D_[histlabel] = {};
                 AddObject<TH2D>(weighthistMap1D_[histlabel], 

@@ -223,6 +223,7 @@ class CombineCardTools(object):
             for var in variations:
                 name = "_".join([fitVariable, var]) if var != "" else fitVariable
                 hist_name = name + "_" + channels[0]
+                tmphist = group.FindObject(hist_name)
                 if not tmphist:
                     logging.warning("Failed to find hist %s in group %s. Skipping" % (hist_name, group.GetName()))
                     continue

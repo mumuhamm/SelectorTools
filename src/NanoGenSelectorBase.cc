@@ -12,6 +12,8 @@ void NanoGenSelectorBase::Init(TTree *tree)
     doTheoryVars_ = doTheory != nullptr && doTheory->GetVal();
     TParameter<bool>* theoryPrefsr = (TParameter<bool>*) GetInputList()->FindObject("theoryPrefsr");
     bool doTheoryPrefsr = theoryPrefsr != nullptr && theoryPrefsr->GetVal();
+    TParameter<bool>* theoryLhe = (TParameter<bool>*) GetInputList()->FindObject("theoryLhe");
+    bool doTheoryLhe = theoryLhe != nullptr && theoryLhe->GetVal();
     TParameter<bool>* lhePart = (TParameter<bool>*) GetInputList()->FindObject("lhe");
     doLHE_ = lhePart != nullptr && lhePart->GetVal();
     TParameter<bool>* prefsrPart = (TParameter<bool>*) GetInputList()->FindObject("prefsr");
@@ -28,6 +30,8 @@ void NanoGenSelectorBase::Init(TTree *tree)
     TParameter<int>* thwSuppress = (TParameter<int>*) GetInputList()->FindObject("thwSuppress");
     thweightSuppress_ = thwSuppress != nullptr ? thwSuppress->GetVal() : 0;
 
+    std::cout << "INFO: doLHE = " << doLHE_ << " doPrefsr " << doPreFSR_ << std::endl;
+
     if (doBorn_)
         systematics_[BornParticles] = "born";
     if (doBareLeptons_)
@@ -42,7 +46,9 @@ void NanoGenSelectorBase::Init(TTree *tree)
     }
     if (doTheoryPrefsr) {
         theoryVarSysts_.insert(theoryVarSysts_.end(), PreFSRLeptons);
-        //theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
+    }
+    if (doTheoryLhe) {
+        theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
     }
 
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");

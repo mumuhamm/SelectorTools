@@ -329,7 +329,7 @@ class SelectorDriver(object):
         outfile = self.outfile_name
         if chan != "Inclusive":
             outfile = self.outfile_name.replace(".root", "_%s.root" % chan)
-        rval = subprocess.call(["hadd", "-f", outfile] + tempfiles)
+        rval = subprocess.call(["hadd", "-k", "-f", "-j", str(self.numCores), outfile] + tempfiles)
         if rval == 0:
             map(os.remove, tempfiles)
         else:
