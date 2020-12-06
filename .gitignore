@@ -7,6 +7,6 @@ Utilities/Selectors/disambiguateFinalStates_*
 *_cc*
 *~
 *#*#
-
+AnalysisDatasetManager
 *.dat
 *.out
