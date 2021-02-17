@@ -83,7 +83,7 @@ def getManagerPath():
     if "dataset_manager_path" not in config['Setup']:
         raise ValueError("dataset_manager_path not specified in config file %s"
                         % config_name)
-    return config['Setup']['dataset_manager_path'] + "/"
+    return os.path.expanduser(config['Setup']['dataset_manager_path']) + "/"
 
 def getCombinePath():
     config = configparser.ConfigParser()

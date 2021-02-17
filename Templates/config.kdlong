@@ -1,0 +1,9 @@
+[Setup]
+user = kdlong
+analysis = WZ
+dataset_manager_path = /afs/hep.wisc.edu/home/%(user)s/work 
+combine_path = %(dataset_manager_path)s/HiggsCombine/CMSSW_8_1_0/src/HiggsAnalysis/CombinedLimit
+output_path = /nfs_scratch/%(user)s/%(analysis)sAnalysisData
+fakeRate_output = %(output_path)s/FakesRates
+hist_output = %(output_path)s/HistFiles
+combine_output = %(output_path)s/CombineData
