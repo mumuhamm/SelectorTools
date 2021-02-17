@@ -22,8 +22,8 @@ void WGenSelector::Init(TTree *tree)
     hists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
         "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi",
         "ptj1", "ptj2", "etaj1", "etaj2", "nJets",
-        //"dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
-        //"ptgmax_assoc", "ptgmax_assoc",
+        "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
+        "ptgmax_assoc", "ptgmax_assoc",
         "ptl_smear",
     };
     hists2D_ = {"etal_ptl_2D", "etal_ptl_smear_2D"};
@@ -55,7 +55,7 @@ void WGenSelector::Init(TTree *tree)
     nLeptons_ = 1;
     nNeutrinos_ = 1;
     doPhotons_ = true;
-    
+    doBareLeptons_ = true;    
     // Chose by MC sample
     if (name_.find("nnlops") != std::string::npos) {
         MV_GEN_ = 80398.0;
@@ -106,6 +106,10 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         ptVlhe = wCand.pt();
         mVlhe = wCand.mass()*1000.;
     }
+    else if (variation.first == BareLeptons) { 
+            ptVlhe = wCand.pt();
+            mVlhe = wCand.mass()*1000.;
+                             }
     else if (variation.first == mWShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
     else if (variation.first == mWShift10MeVDown)
@@ -335,8 +339,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
         }  
     }
 
-    if (variation.first == BareLeptons) {
-        SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
+   if (variation.first == BareLeptons) {
+       
+        SafeHistFill(histMap1D_, concatenateNames("nGammaAssoc",toAppend), channel_, variation.first, photons.size(), weight);
 
         auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
         auto compareByDRLead = [lep] (const reco::GenParticle& a, const reco::GenParticle& b) {
@@ -345,6 +350,8 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
 
         auto gclose = std::min_element(photons.begin(), photons.end(), compareByDRLead);
         auto maxPtg = std::max_element(photons.begin(), photons.end(), compareByPt);
+               
+        
 
         SafeHistFill(histMap1D_, "dRlgamma_minassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose, lep) : 0., weight);
         SafeHistFill(histMap1D_, "dRlgamma_maxptassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep) : 0., weight);

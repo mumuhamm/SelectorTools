@@ -31,11 +31,12 @@ void NanoGenSelectorBase::Init(TTree *tree)
     thweightSuppress_ = thwSuppress != nullptr ? thwSuppress->GetVal() : 0;
 
     std::cout << "INFO: doLHE = " << doLHE_ << " doPrefsr " << doPreFSR_ << std::endl;
+    std::cout << "INFO: doBareLeptons = "<<doBareLeptons_<<"\n";
 
     if (doBorn_)
         systematics_[BornParticles] = "born";
     if (doBareLeptons_)
-        systematics_[BareLeptons] = "barelep";
+        systematics_[BareLeptons] = "bare";
     if (doPreFSR_)
         systematics_[PreFSRLeptons] = "prefsr";
     if (doLHE_)
@@ -50,7 +51,9 @@ void NanoGenSelectorBase::Init(TTree *tree)
     if (doTheoryLhe) {
         theoryVarSysts_.insert(theoryVarSysts_.end(), LHEParticles);
     }
-
+    if (doBareLeptons_) {
+        theoryVarSysts_.insert(theoryVarSysts_.end(), BareLeptons);
+    }
     TParameter<bool>* doPtVSplit = (TParameter<bool>*) GetInputList()->FindObject("theoryPtV");
     if (doTheoryVars_ && doPtVSplit != nullptr && doPtVSplit->GetVal()) {
         // For now it's based on the LHE kinematics
@@ -284,9 +287,9 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
         if (bareLeptons.size() > 0 && doPhotons_) {
             auto& lep = bareLeptons.at(0);
             photons.erase(std::remove_if(photons.begin(), photons.end(), 
-                    [lep] (const reco::GenParticle& p) { return reco::deltaR(p, lep) > 0.1; }),
-                photons.end()
-            );
+                    [lep] (const reco::GenParticle& p) { //std::cout<<"INFO: DeltaR = "<<reco::deltaR(p, lep)<<"\n";
+                                                         return reco::deltaR(p, lep) > 0.4; }),  photons.end());
+           //for(unsigned int i=0;i<photons.size();++i){std::cout<<"INFO: photons remaining = "<<i<<"\n";}
         }
         if (doLHE_) {
             for (size_t i = 0; i < *nLHEPart; i++) {
