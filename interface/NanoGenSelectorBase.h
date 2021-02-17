@@ -70,7 +70,7 @@ public :
     bool doLHE_ = false;
     bool doPreFSR_ = false;
     bool doBareLeptons_ = false;
-
+    float ratio_mass;
     float refWeight = 1;
 
     TH1D* mcWeights_;

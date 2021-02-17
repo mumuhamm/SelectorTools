@@ -32,7 +32,7 @@ void NanoGenSelectorBase::Init(TTree *tree)
 
     std::cout << "INFO: doLHE = " << doLHE_ << " doPrefsr " << doPreFSR_ << std::endl;
     std::cout << "INFO: doBareLeptons = "<<doBareLeptons_<<"\n";
-
+    std::cout << " When the Minnlo's are produced with high weight: suppress W = "<< weightSuppress_ <<"\n"; 
     if (doBorn_)
         systematics_[BornParticles] = "born";
     if (doBareLeptons_)
@@ -284,6 +284,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
             }
         }
         // Warning! Only really works for the W
+        //We need the deltaR for Z case as well, check whether the selection of bare lepton can produce the same distribution , ng_ave < 8
         if (bareLeptons.size() > 0 && doPhotons_) {
             auto& lep = bareLeptons.at(0);
             photons.erase(std::remove_if(photons.begin(), photons.end(), 

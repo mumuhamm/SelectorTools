@@ -21,7 +21,7 @@ void WGenSelector::Init(TTree *tree)
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
     hists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
         "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi",
-        "ptj1", "ptj2", "etaj1", "etaj2", "nJets",
+        "ptj1", "ptj2", "etaj1", "etaj2", "nJets","Ratio_Wmass", 
         "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
         "ptgmax_assoc", "ptgmax_assoc",
         "ptl_smear",
@@ -95,11 +95,12 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
             SetComposite();
         }
     }
-
+     
     if (variation.first == Central) {
         cenWeight = weight;
         ptVlhe = wCand.pt();
         mVlhe = wCand.mass()*1000.;
+        ratio_mass = wCand.mass();
     }
     else if (variation.first == LHEParticles) {
         // define at LHE level if it exists
@@ -340,7 +341,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     }
 
    if (variation.first == BareLeptons) {
-       
+       //ponerse las pilas, the (variation.first == BareLeptons) refraining the histograms to fill 
+        ratio_mass /= wCand.mass();
+        SafeHistFill(histMap1D_, "Ratio_Wmass", channel_, variation.first,  ratio_mass, weight);      
         SafeHistFill(histMap1D_, concatenateNames("nGammaAssoc",toAppend), channel_, variation.first, photons.size(), weight);
 
         auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
