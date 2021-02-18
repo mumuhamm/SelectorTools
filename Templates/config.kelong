@@ -1,7 +1,7 @@
 [Setup]
 user = kelong
 analysis = ZGen
-dataset_manager_path = /afs/cern.ch/user/k/%(user)s/work 
+dataset_manager_path = ~/work 
 dataset_manager_name = AnalysisDatasetManager
 combine_path = %(dataset_manager_path)s/HiggsCombine/CMSSW_8_1_0/src/HiggsAnalysis/CombinedLimit
 output_path = /eos/user/k/%(user)s/%(analysis)sAnalysisData
