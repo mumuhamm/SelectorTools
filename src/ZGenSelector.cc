@@ -18,7 +18,7 @@ void ZGenSelector::Init(TTree *tree)
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
     std::vector<std::string> basehists1D = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
-        "MET", "HT",};
+        "MET", "HT","Ratio_Zmass", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc",};
     hists1D_ = basehists1D;
     //std::vector<std::string> partonicChans = {"uu_dd", "uubar_ddbar", "ug_dg", "ubarg_dbarg", "gg", "other"};
     //for (auto& chan : partonicChans) {
@@ -29,9 +29,10 @@ void ZGenSelector::Init(TTree *tree)
 
     weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "ptl2", "etal2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "nJets",
-        "MET", "HT", };
+        "MET", "HT","Ratio_Zmass", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc", };
     nLeptons_ = 2;
-
+    doPhotons_ = true;
+    doBareLeptons_ = true;
     TParameter<bool>* massVar = (TParameter<bool>*) GetInputList()->FindObject("massVar");
     doMassVar_ = massVar != nullptr && massVar->GetVal();
 
@@ -62,12 +63,20 @@ void ZGenSelector::Init(TTree *tree)
 void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std::string> variation) {
     NanoGenSelectorBase::LoadBranchesNanoAOD(entry, variation);
 
-    if (variation.first == Central)
+    if (variation.first == Central){
         cenWeight = weight;
+        ptVlhe = zCand.pt();
+        mVlhe = zCand.mass()*1000.;
+        ratio_mass = zCand.mass();
+       }
     else if (variation.first == LHEParticles) {
         ptVlhe = zCand.pt();
         mVlhe = zCand.mass()*1000.;
     }
+   else if (variation.first == BareLeptons) { 
+            ptVlhe = zCand.pt();
+            mVlhe = zCand.mass()*1000.;
+                             }
     else if (variation.first == mZShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
     else if (variation.first == mZShift10MeVDown)
@@ -243,6 +252,37 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
         }  
     }
     
+
+   if (variation.first == BareLeptons) {
+
+  ratio_mass /= zCand.mass();
+  SafeHistFill(histMap1D_, "Ratio_Zmass", channel_, variation.first,  ratio_mass, weight);
+  SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
+
+  auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
+  auto compareByDRLead1 = [lep1] (const reco::GenParticle& a, const reco::GenParticle& b) {
+    return reco::deltaR(a, lep1) < reco::deltaR(b, lep1);
+  };
+   auto compareByDRLead2 = [lep2] (const reco::GenParticle& a, const reco::GenParticle& b) {
+      return reco::deltaR(a, lep2) < reco::deltaR(b, lep2);
+   };
+
+  auto gclose1 = std::min_element(photons.begin(), photons.end(), compareByDRLead1);
+  auto gclose2 = std::min_element(photons.begin(), photons.end(), compareByDRLead2);
+  auto maxPtg = std::max_element(photons.begin(), photons.end(), compareByPt);
+
+
+
+  SafeHistFill(histMap1D_, "dRlgamma_minassoc1", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose1, lep1) : 0., weight);
+  SafeHistFill(histMap1D_, "dRlgamma_minassoc2", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose2, lep2) : 0., weight);
+  SafeHistFill(histMap1D_, "dRlgamma_maxptassoc1", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep1) : 0., weight);
+  SafeHistFill(histMap1D_, "dRlgamma_maxptassoc2", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep2) : 0., weight);
+  SafeHistFill(histMap1D_, "ptg_closeassoc1", channel_, variation.first, photons.size() > 0 ? gclose1->pt() : 0., weight);
+  SafeHistFill(histMap1D_, "ptg_closeassoc2", channel_, variation.first, photons.size() > 0 ? gclose2->pt() : 0., weight);
+  SafeHistFill(histMap1D_, "ptgmax_assoc", channel_, variation.first, photons.size() > 0 ? maxPtg->pt() : 0., weight);
+ }
+
+
     // Should check how slow this is. For now it's off 
     return;
 
@@ -279,5 +319,11 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
             SafeHistFill(histMap1D_, (partonicChan+"_phij"+std::to_string(i)).c_str(), channel_, variation.first, jet.phi(), weight);
         }  
     }
+
+   
+
+
+    
+   
 }
 

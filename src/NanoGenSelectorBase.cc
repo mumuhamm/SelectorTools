@@ -289,7 +289,7 @@ void NanoGenSelectorBase::LoadBranchesNanoAOD(Long64_t entry, SystPair variation
             auto& lep = bareLeptons.at(0);
             photons.erase(std::remove_if(photons.begin(), photons.end(), 
                     [lep] (const reco::GenParticle& p) { //std::cout<<"INFO: DeltaR = "<<reco::deltaR(p, lep)<<"\n";
-                                                         return reco::deltaR(p, lep) > 0.4; }),  photons.end());
+                                                         return reco::deltaR(p, lep) > 3.0; }),  photons.end());
            //for(unsigned int i=0;i<photons.size();++i){std::cout<<"INFO: photons remaining = "<<i<<"\n";}
         }
         if (doLHE_) {

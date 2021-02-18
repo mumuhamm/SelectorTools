@@ -341,10 +341,13 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
     }
 
    if (variation.first == BareLeptons) {
-       //ponerse las pilas, the (variation.first == BareLeptons) refraining the histograms to fill 
+       //ponerse las pilas, the (variation.first == BareLeptons) refraining the histograms to fill
+       //Call the channel central just to avoid appending the name "barelep".
+       //These histograms should only be built for the barelepton case, should be understood that they always refer 
+       //to the barlep channel implicitly 
         ratio_mass /= wCand.mass();
-        SafeHistFill(histMap1D_, "Ratio_Wmass", channel_, variation.first,  ratio_mass, weight);      
-        SafeHistFill(histMap1D_, concatenateNames("nGammaAssoc",toAppend), channel_, variation.first, photons.size(), weight);
+        SafeHistFill(histMap1D_, "Ratio_Wmass", channel_, Central,  ratio_mass, weight);      
+        SafeHistFill(histMap1D_, concatenateNames("nGammaAssoc",toAppend), channel_, Central, photons.size(), weight);
 
         auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
         auto compareByDRLead = [lep] (const reco::GenParticle& a, const reco::GenParticle& b) {
@@ -356,9 +359,9 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
                
         
 
-        SafeHistFill(histMap1D_, "dRlgamma_minassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*gclose, lep) : 0., weight);
-        SafeHistFill(histMap1D_, "dRlgamma_maxptassoc", channel_, variation.first, photons.size() > 0 ? reco::deltaR(*maxPtg, lep) : 0., weight);
-        SafeHistFill(histMap1D_, "ptg_closeassoc", channel_, variation.first, photons.size() > 0 ? gclose->pt() : 0., weight);
-        SafeHistFill(histMap1D_, "ptgmax_assoc", channel_, variation.first, photons.size() > 0 ? maxPtg->pt() : 0., weight);
+        SafeHistFill(histMap1D_, "dRlgamma_minassoc", channel_, Central, photons.size() > 0 ? reco::deltaR(*gclose, lep) : 0., weight);
+        SafeHistFill(histMap1D_, "dRlgamma_maxptassoc", channel_, Central, photons.size() > 0 ? reco::deltaR(*maxPtg, lep) : 0., weight);
+        SafeHistFill(histMap1D_, "ptg_closeassoc", channel_, Central, photons.size() > 0 ? gclose->pt() : 0., weight);
+        SafeHistFill(histMap1D_, "ptgmax_assoc", channel_, Central, photons.size() > 0 ? maxPtg->pt() : 0., weight);
     }
 }
