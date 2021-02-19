@@ -71,6 +71,9 @@ public :
     bool doPreFSR_ = false;
     bool doBareLeptons_ = false;
     float ratio_mass;
+    float leppT_ratio;
+    float lep1pT_ratio;
+    float lep2pT_ratio;
     float refWeight = 1;
 
     TH1D* mcWeights_;

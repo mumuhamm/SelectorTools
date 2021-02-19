@@ -21,7 +21,7 @@ void WGenSelector::Init(TTree *tree)
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
     hists1D_ = {"CutFlow", "mWmet", "yWmet", "ptWmet", "mW", "yW", "ptW", "mTtrue", "mTmet",
         "ptl", "etal", "phil", "ptnu", "etanu", "phinu", "MET", "MET_phi",
-        "ptj1", "ptj2", "etaj1", "etaj2", "nJets","Ratio_Wmass", 
+        "ptj1", "ptj2", "etaj1", "etaj2", "nJets","Ratio_Wmass","Ratio_leppT", 
         "dRlgamma_maxptassoc", "dRlgamma_minassoc", "ptg_closeassoc", "ptg_maxassoc", "nGammaAssoc", 
         "ptgmax_assoc", "ptgmax_assoc",
         "ptl_smear",
@@ -101,6 +101,8 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
         ptVlhe = wCand.pt();
         mVlhe = wCand.mass()*1000.;
         ratio_mass = wCand.mass();
+        auto& mylep = leptons.at(0);
+        leppT_ratio =mylep.pt();
     }
     else if (variation.first == LHEParticles) {
         // define at LHE level if it exists
@@ -110,6 +112,7 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     else if (variation.first == BareLeptons) { 
             ptVlhe = wCand.pt();
             mVlhe = wCand.mass()*1000.;
+            //ratio_mass = wCand.mass();
                              }
     else if (variation.first == mWShift10MeVUp)
         weight = cenWeight*breitWignerWeight(10.);
@@ -310,7 +313,6 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
             ((variation.first == ptV40toInf || variation.first == ptV40toInf_lhe) && ptVlhe < 40. )) {
         return;
     }
-
     SafeHistFill(histMap1D_, concatenateNames("mW", toAppend), channel_, variation.first, wCand.mass(), weight);
     SafeHistFill(histMap1D_, concatenateNames("yW", toAppend), channel_, variation.first, wCand.Rapidity(), weight);
     SafeHistFill(histMap1D_, concatenateNames("ptW", toAppend), channel_, variation.first, wCand.pt(), weight);
@@ -346,7 +348,11 @@ void WGenSelector::FillHistogramsByName(Long64_t entry, std::string& toAppend, S
        //These histograms should only be built for the barelepton case, should be understood that they always refer 
        //to the barlep channel implicitly 
         ratio_mass /= wCand.mass();
-        SafeHistFill(histMap1D_, "Ratio_Wmass", channel_, Central,  ratio_mass, weight);      
+        leppT_ratio /= lep.pt();
+        float reciproc_rpT = 1.0/leppT_ratio;
+        float reciproc_rm = 1.0/ratio_mass; 
+        SafeHistFill(histMap1D_, "Ratio_leppT", channel_, Central,  reciproc_rpT, weight);
+        SafeHistFill(histMap1D_, "Ratio_Wmass", channel_, Central,  reciproc_rm, weight);      
         SafeHistFill(histMap1D_, concatenateNames("nGammaAssoc",toAppend), channel_, Central, photons.size(), weight);
 
         auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
