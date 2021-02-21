@@ -18,7 +18,7 @@ void ZGenSelector::Init(TTree *tree)
     histMap1D_[{"CutFlow", Unknown, Central}] = {};
     std::vector<std::string> basehists1D = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "phil1", "ptl2", "etal2", "phil2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "phij1", "phij2", "phij3", "nJets",
-        "MET", "HT","Ratio_Zmass", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc",};
+        "MET", "HT","Ratio_Zmass","Ratio_lep1pT","Ratio_lep2pT", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc",};
     hists1D_ = basehists1D;
     //std::vector<std::string> partonicChans = {"uu_dd", "uubar_ddbar", "ug_dg", "ubarg_dbarg", "gg", "other"};
     //for (auto& chan : partonicChans) {
@@ -29,7 +29,7 @@ void ZGenSelector::Init(TTree *tree)
 
     weighthists1D_ = {"CutFlow", "ZMass", "yZ", "ptZ", "phiZ", "ptl1", "etal1", "ptl2", "etal2", 
         "ptj1", "ptj2", "ptj3", "etaj1", "etaj2", "etaj3", "nJets",
-        "MET", "HT","Ratio_Zmass", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc", };
+        "MET", "HT","Ratio_Zmass","Ratio_lep1pT","Ratio_lep2pT", "dRlgamma_maxptassoc1","dRlgamma_maxptassoc2", "dRlgamma_minassoc1","dRlgamma_minassoc2", "ptg_closeassoc1","ptg_closeassoc2", "ptg_maxassoc", "nGammaAssoc","ptgmax_assoc", };
     nLeptons_ = 2;
     doPhotons_ = true;
     doBareLeptons_ = true;
@@ -68,6 +68,10 @@ void ZGenSelector::LoadBranchesNanoAOD(Long64_t entry, std::pair<Systematic, std
         ptVlhe = zCand.pt();
         mVlhe = zCand.mass()*1000.;
         ratio_mass = zCand.mass();
+        auto& mylep1 = leptons.at(0);
+        auto& mylep2 = leptons.at(1);
+        lep1pT_ratio =mylep1.pt();
+        lep2pT_ratio =mylep2.pt();
        }
     else if (variation.first == LHEParticles) {
         ptVlhe = zCand.pt();
@@ -256,7 +260,14 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
    if (variation.first == BareLeptons) {
 
   ratio_mass /= zCand.mass();
-  SafeHistFill(histMap1D_, "Ratio_Zmass", channel_, variation.first,  ratio_mass, weight);
+  float reciproc_rm = 1.0/ratio_mass; 
+  lep1pT_ratio /= lep1.pt();
+  lep2pT_ratio /= lep2.pt();
+  float reciproc_r1pT = 1.0/lep1pT_ratio;
+  float reciproc_r2pT = 1.0/lep2pT_ratio;
+  SafeHistFill(histMap1D_, "Ratio_lep1pT", channel_, Central,  reciproc_r1pT, weight);
+  SafeHistFill(histMap1D_, "Ratio_lep2pT", channel_, Central,  reciproc_r2pT, weight);
+  SafeHistFill(histMap1D_, "Ratio_Zmass", channel_, variation.first,  reciproc_rm, weight);
   SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
 
   auto compareByPt = [](const reco::GenParticle& a, const reco::GenParticle& b) { return a.pt() < b.pt(); };
