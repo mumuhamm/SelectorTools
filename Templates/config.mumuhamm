@@ -2,6 +2,7 @@
 user = mumuhamm
 analysis = WZ
 dataset_manager_path = /afs/cern.ch/work/m/mumuhamm/WBoson/CMSSW_11_0_0/src/Data_Manager
+dataset_manager_name = /afs/cern.ch/work/m/mumuhamm/WBoson/CMSSW_11_0_0/src/Data_Manager
 combine_path = /eos/home-m/mumuhamm/W_Boson/combine_tool/CMSSW_8_1_0/src/HiggsAnalysis/CombinedLimit
 output_path = /eos/user/m/mumuhamm/W_Boson/OutPutFiles/
 fakeRate_output = %(output_path)s/FakesRates

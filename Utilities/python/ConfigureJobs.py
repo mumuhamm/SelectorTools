@@ -69,7 +69,7 @@ def getManagerName():
 def getManagerPath():
     config_name = ""
     try:
-        config_name = "Templates/config.%s" % os.getlogin()
+        config_name = "/afs/cern.ch/work/m/mumuhamm/WBoson/CMSSW_11_0_0/src/Analysis/SelectorTools/Templates/config.%s" % os.getlogin()
     except OSError:
         pass
     if not os.path.isfile(config_name):

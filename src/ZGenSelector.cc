@@ -265,8 +265,8 @@ void ZGenSelector::FillHistograms(Long64_t entry, std::pair<Systematic, std::str
   lep2pT_ratio /= lep2.pt();
   float reciproc_r1pT = 1.0/lep1pT_ratio;
   float reciproc_r2pT = 1.0/lep2pT_ratio;
-  SafeHistFill(histMap1D_, "Ratio_lep1pT", channel_, Central,  reciproc_r1pT, weight);
-  SafeHistFill(histMap1D_, "Ratio_lep2pT", channel_, Central,  reciproc_r2pT, weight);
+  SafeHistFill(histMap1D_, "Ratio_lep1pT", channel_, variation.first,  reciproc_r1pT, weight);
+  SafeHistFill(histMap1D_, "Ratio_lep2pT", channel_, variation.first,  reciproc_r2pT, weight);
   SafeHistFill(histMap1D_, "Ratio_Zmass", channel_, variation.first,  reciproc_rm, weight);
   SafeHistFill(histMap1D_, "nGammaAssoc", channel_, variation.first, photons.size(), weight);
 

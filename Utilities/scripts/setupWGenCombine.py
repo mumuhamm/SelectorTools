@@ -12,11 +12,11 @@ parser.add_argument("--debug", action='store_true',
     help="Print debug info")
 parser.add_argument("--mc2hes", action='store_true',
     help="Convert MC errors to hessian")
-parser.add_argument("-c", "--central", type=str, default="wlnu_jetbinned_nlo_cp5",
+parser.add_argument("-c", "--central", type=str, default="wpmunu_nlo_ew",
     help="Sample to use as central value")
 parser.add_argument("--files", type=lambda x: [i.strip() for i in x.split(",")], 
     default=[], help="Samples to add to output file")
-parser.add_argument("-d", "--data", type=str, default="wlnu_nlo",
+parser.add_argument("-d", "--data", type=str, default="wpmunu_nlo_ew",
     help="Sample to use as dummy data")
 parser.add_argument("-a", "--append", type=str, default="",
     help="Append to output folder name")
@@ -49,7 +49,8 @@ logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
 
 cardtool = CombineCardTools.CombineCardTools()
 
-manager_path = ConfigureJobs.getManagerPath() 
+manager_path = ConfigureJobs.getManagerPath()
+#manager_path = "/afs/cern.ch/work/m/mumuhamm/WBoson/CMSSW_11_0_0/src/Data_Manager" 
 sys.path.append("/".join([manager_path, "AnalysisDatasetManager",
     "Utilities/python"]))
 
@@ -60,7 +61,7 @@ config_factory = ConfigHistFactory(
 )
 
 #plot_groups = ["wlnu_lo", "wlnu_lo_cp5", "wlnu_nlo", "wlnu_jetbinned_nlo", "wlnu_jetbinned_nlo_cp5", ]
-plot_groups = args.files if args.files else ["wpmunu_minnlo_nnlopslike_photos", "wpmunu_nnlops_photos", "wpmunu_nnlops_nlow"]
+plot_groups = args.files if args.files else ["wpmunu_minnlo_prod", "wpmunu_nlo_ew", "wpmunu_nlo_qcd"]
 plotGroupsMap = {name : config_factory.getPlotGroupMembers(name) for name in plot_groups}
 
 xsecs  = ConfigureJobs.getListOfFilesWithXSec([f for files in plotGroupsMap.values() for f in files])
@@ -91,7 +92,7 @@ normVariations = [] if args.theoryOnly else ["mWBWShift100MeV", "mWBWShift50MeV"
 cardtool.setNormalizedVariations(normVariations)
 
 folder_name = "_".join([args.fitvar,args.append]) if args.append != "" else args.fitvar
-basefolder = "/data/kelong/" if args.ssd else "/eos/user/k/kelong"
+basefolder = "/data/ali/" if args.ssd else "/eos/user/m/mumuhamm/www"
 cardtool.setOutputFolder(basefolder+"/CombineStudies/WGen/%s" % folder_name)
 
 cardtool.setLumi(args.lumi)
@@ -182,7 +183,7 @@ nuissance_map = {"mn" : 273, "mp" : 273, "m" : 273 }
 for i, chan in enumerate(args.channels):
     data = args.data if "," not in args.data else args.data.split(",")[i]
     central = args.central if "," not in args.central else args.data.split(",")[i]
-    cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
+    cardtool.setTemplateFileName("../../Templates/CombineCards/VGen_2021/WGen_template_{channel}.txt")
     logging.info("Writting cards for channel %s" % chan)
     cardtool.writeCards(chan, nuissance_map[chan], 
         extraArgs={"data_name" : data, 
