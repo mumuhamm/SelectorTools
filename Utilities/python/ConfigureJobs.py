@@ -1,5 +1,5 @@
 import datetime
-import UserInput
+from . import UserInput
 import fnmatch 
 import glob
 import subprocess
@@ -190,7 +190,7 @@ def getListOfFiles(filelist, selection, manager_path="", analysis=""):
     mc_info = UserInput.readAllInfo("/".join([data_path, "montecarlo/*"]))
     analysis_info = UserInput.readInfo("/".join([data_path, analysis, selection])) \
         if analysis != "" else []
-    valid_names = (data_info.keys() + mc_info.keys()) if not analysis_info else analysis_info.keys()
+    valid_names = (list(ata_info.keys()) + list(mc_info.keys())) if not analysis_info else list(analysis_info.keys())
     group_names = UserInput.readAllInfo("%s/%s.py" %(group_path, analysis)) if analysis else dict()
     names = []
     for name in filelist:
@@ -202,7 +202,7 @@ def getListOfFiles(filelist, selection, manager_path="", analysis=""):
         elif "WZxsec2016" in name:
             dataset_file = manager_path + \
                 "%s/FileInfo/WZxsec2016/%s.json" % (getManagerPath(), selection)
-            allnames = json.load(open(dataset_file)).keys()
+            allnames = list(json.load(open(dataset_file)).keys())
             if "nodata" in name:
                 nodata = [x for x in allnames if "data" not in x]
                 names += nodata
@@ -227,7 +227,7 @@ def getListOfFiles(filelist, selection, manager_path="", analysis=""):
             continue
         else:
             names += [name]
-    if not names or len(filter(lambda x: x != '', names)) == 0:
+    if not names or len(list(filter(lambda x: x != '', names))) == 0:
         raise RuntimeError("No processes found matching pattern '%s'" % filelist)
     return [str(i) for i in names]
 

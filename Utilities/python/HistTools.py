@@ -46,7 +46,7 @@ def makeUnrolledHist(init_2D_hist, xbins, ybins, name="", overflow=False):
         ybinned_hist = ybinned_hist.Rebin(len(xbins)-1, hist_name+"_rebin", xbins)
         hists_half_rolled.append(ybinned_hist)
 
-    if name is "":
+    if name == "":
         name = init_2D_hist.GetName().replace("2D", "unrolled")
     unrolled_hist = ROOT.TH1D(name, "Unrolled", nbins, 0, nbins)
     unrolled_hist.SetDirectory(init_2D_hist.GetDirectory())

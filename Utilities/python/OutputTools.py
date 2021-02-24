@@ -42,6 +42,5 @@ def writeOutputListItem(item, directory):
         directory.cd()
         item.Write()
     else:
-        print "Couldn't write output item:"
-        print repr(item)
+        logging.warning("Couldn't write output item: %s " % repr(item))
     directory.cd()

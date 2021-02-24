@@ -1,8 +1,8 @@
 import logging
 import re
-import ConfigureJobs
-import HistTools
-import OutputTools
+from . import ConfigureJobs
+from . import HistTools
+from . import OutputTools
 from prettytable import PrettyTable
 import os
 import ROOT
@@ -217,7 +217,7 @@ class CombineCardTools(object):
         fitVariable = self.getFitVariable(group.GetName())
         if central:
             variations.insert(0, "")
-        for label, channels in self.channelsToCombine.iteritems():
+        for label, channels in self.channelsToCombine.items():
             if label not in self.yields:
                 self.yields[label] = {}
             for var in variations:
@@ -448,7 +448,7 @@ class CombineCardTools(object):
     def writeCards(self, chan, nuisances, label="", outlabel="", extraArgs={}):
         chan_dict = self.yields[chan].copy()
         chan_dict.update(extraArgs)
-        for key, value in extraArgs.iteritems():
+        for key, value in extraArgs.items():
             if "yield:" in value:
                 chan_dict[key] = chan_dict[value.replace("yield:", "")]
         chan_dict["nuisances"] = nuisances
@@ -463,5 +463,5 @@ class CombineCardTools(object):
             chan_dict
         )
         chan_dict.pop("card_append")
-        print chan_dict
+        print (chan_dict)
 

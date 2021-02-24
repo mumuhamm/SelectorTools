@@ -4,11 +4,12 @@ import glob
 import argparse
 import datetime
 from collections import OrderedDict
-import ConfigureJobs
+from . import ConfigureJobs
 import sys
 import ROOT
 import imp
 import os
+import logging
 
 def getDefaultParser(allow_from_file=True):
     parser = argparse.ArgumentParser()
@@ -91,14 +92,14 @@ def readJson(json_file_name):
         try:
             json_info = json.load(json_file)
         except ValueError as err:
-            print "Error reading JSON file %s. The error message was:" % json_file_name 
+            logigng.error("Problem reading JSON file %s. The error message was:" % json_file_name) 
             print(err)
     return json_info
 
 # Depends on AnalysisDatasetManagerModule
 def getHistInfo(analysis, input_hists, noConfig=False):
     if noConfig:
-        print "INFO: assuming histogram information is specified in selector"
+        logging.info("Assuming histogram information is specified in selector")
         return (input_hists, [])
 
     manager_path = ConfigureJobs.getManagerPath()

@@ -1,3 +1,4 @@
+#!/bin/usr/env python
 from python import ConfigureJobs,CombineCardTools,UserInput
 import sys
 import ROOT
@@ -83,7 +84,7 @@ if "unrolled" in args.fitvar:
     #cardtool.setUnrolled([-2.5+0.5*i for i in range(0,11)], range(26, 56, 3))
 cardtool.setProcesses(plotGroupsMap)
 cardtool.setChannels(args.channels)
-print "Channels are", args.channels
+print ("Channels are", args.channels)
 cardtool.setCrosSectionMap(xsecs)
 
 variations = [] if args.theoryOnly else ["CMS_scale_m"] 
