@@ -1,5 +1,5 @@
 import datetime
-from . import UserInput
+import UserInput
 import fnmatch 
 import glob
 import subprocess
@@ -69,7 +69,7 @@ def getManagerName():
 def getManagerPath():
     config_name = ""
     try:
-        config_name = "/afs/cern.ch/work/m/mumuhamm/WBoson/CMSSW_11_0_0/src/Analysis/SelectorTools/Templates/config.%s" % os.getlogin()
+        config_name = "Templates/config.%s" % os.getlogin()
     except OSError:
         pass
     if not os.path.isfile(config_name):
@@ -83,7 +83,7 @@ def getManagerPath():
     if "dataset_manager_path" not in config['Setup']:
         raise ValueError("dataset_manager_path not specified in config file %s"
                         % config_name)
-    return os.path.expanduser(config['Setup']['dataset_manager_path']) + "/"
+    return os.path.expanduser(config['Setup']['dataset_manager_path'])
 
 def getCombinePath():
     config = configparser.ConfigParser()
@@ -184,13 +184,18 @@ def getListOfHDFSFiles(file_path):
 def getListOfFiles(filelist, selection, manager_path="", analysis=""):
     if manager_path is "":
         manager_path = getManagerPath()
+    print('the main manager path------> ',  str(manager_path))
     data_path = "%s/%s/FileInfo" % (manager_path, getManagerName())
+    print('the data path -----------> ',  str(data_path))
     group_path = "%s/AnalysisDatasetManager/PlotGroups" % manager_path
+    print('the group path ----------> ', str(group_path))
     data_info = UserInput.readAllInfo("/".join([data_path, "data/*"]))
+    #print(data_info)
     mc_info = UserInput.readAllInfo("/".join([data_path, "montecarlo/*"]))
+    #print(mc_info)
     analysis_info = UserInput.readInfo("/".join([data_path, analysis, selection])) \
         if analysis != "" else []
-    valid_names = (list(ata_info.keys()) + list(mc_info.keys())) if not analysis_info else list(analysis_info.keys())
+    valid_names = (list(data_info.keys()) + list(mc_info.keys())) if not analysis_info else list(analysis_info.keys())
     group_names = UserInput.readAllInfo("%s/%s.py" %(group_path, analysis)) if analysis else dict()
     names = []
     for name in filelist:
@@ -251,6 +256,8 @@ def fillTemplatedFile(template_file_name, out_file_name, template_dict):
         result = source.substitute(template_dict)
     with open(out_file_name, "w") as outFile:
         outFile.write(result)
+        print('=====================================print the results related to datacard production======================================')
+        print(result)
 
 def getListOfFilesWithXSec(filelist, manager_path="", selection="ntuples"):
     if manager_path is "":

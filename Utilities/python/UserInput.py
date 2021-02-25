@@ -4,7 +4,7 @@ import glob
 import argparse
 import datetime
 from collections import OrderedDict
-from . import ConfigureJobs
+import ConfigureJobs
 import sys
 import ROOT
 import imp
