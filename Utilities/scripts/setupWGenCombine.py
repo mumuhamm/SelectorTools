@@ -5,6 +5,7 @@ import ROOT
 import logging
 import array
 import argparse
+import os 
 
 ROOT.gROOT.SetBatch(True)
 
@@ -33,7 +34,7 @@ parser.add_argument("--noPdf", action='store_true',
     help="don't add PDF uncertainties")
 parser.add_argument("--ssd", action='store_true', 
     help="Write to /data/kelong, not /eos/user")
-parser.add_argument("--noPtVSplit", action='store_true', 
+parser.add_argument("--splitPtV", action='store_true', 
     help="Don't split scale uncertainties by pt(V)")
 parser.add_argument("--allHessianVars", action='store_true', 
     help="store all hessian variations")
@@ -169,7 +170,7 @@ for process in plot_groups:
         if not args.noPdf:
             cardtool.addTheoryVar(process, 'pdf_mc' if "cp5" not in process else "pdf_hessian", range(10,111), central=0)
 
-    if not args.noPtVSplit:
+    if args.splitPtV:
         for pair in ptbinPairs:
             varName = 'ptV%ito%i' % pair
             varName = varName.replace("100", "Inf")
@@ -180,11 +181,26 @@ for process in plot_groups:
     cardtool.loadHistsForProcess(process, expandedTheory=args.allHessianVars)
     cardtool.writeProcessHistsToOutput(process)
 
-nuissance_map = {"mn" : 273, "mp" : 273, "m" : 273 }
+    scriptdir = os.path.dirname(os.path.realpath(__file__)) 
+    path = "/".join(scriptdir.split("/")[:-2]+["Templates", "CombineCards", "VGen"])
+
+    nnu = 2
+    if args.splitPtV:
+        nnu += cardtool.addCustomizeCard(path+"/Customize/PtV_template.txt")
+    if not args.theoryOnly:
+        nnu += cardtool.addCustomizeCard(path+"/Customize/muscale_template.txt")
+
+    if not args.noPdf:
+        nnu += cardtool.addCustomizeCard(path+"/Customize/pdfHessian_template.txt") \
+             if args.allHessianVars else cardtool.addCustomizeCard(path+"/Customize/pdf_template.txt")
+    else:
+        nnu += cardtool.addCustomizeCard(path+"/Customize/scale_template.txt")
+
+    nuissance_map = {"mn" : nnu, "mp" : nnu, "m" : nnu}
 for i, chan in enumerate(args.channels):
     data = args.data if "," not in args.data else args.data.split(",")[i]
     central = args.central if "," not in args.central else args.data.split(",")[i]
-    cardtool.setTemplateFileName("Templates/CombineCards/VGen/WGen_template_{channel}.txt")
+    cardtool.setTemplateFileName("%s/WGen_template_{channel}.txt" % path)
     logging.info("Writting cards for channel %s" % chan)
     cardtool.writeCards(chan, nuissance_map[chan], 
         extraArgs={"data_name" : data, 

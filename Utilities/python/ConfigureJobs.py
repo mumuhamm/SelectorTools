@@ -10,6 +10,7 @@ import string
 import socket
 import logging
 import logging
+import os
 #try:
 import configparser
 #except:
@@ -50,7 +51,9 @@ def getChannels(analysis='WZ'):
 def getManagerName():
     config_name = ""
     try:
-        config_name = "Templates/config.%s" % os.getlogin()
+        scriptdir = os.path.dirname(os.path.realpath(__file__)) 
+        path = "/".join(scriptdir.split("/")[:-2])
+        config_name = "%s/Templates/config.%s" % (path, os.getlogin())
     except OSError:
         pass
     default_name = "AnalysisDatasetManager"
@@ -69,7 +72,9 @@ def getManagerName():
 def getManagerPath():
     config_name = ""
     try:
-        config_name = "Templates/config.%s" % os.getlogin()
+        scriptdir = os.path.dirname(os.path.realpath(__file__)) 
+        path = "/".join(scriptdir.split("/")[:-2])
+        config_name = "%s/Templates/config.%s" % (path, os.getlogin())
     except OSError:
         pass
     if not os.path.isfile(config_name):
@@ -182,7 +187,7 @@ def getListOfHDFSFiles(file_path):
 # TODO: Would be good to switch the order of the last two arguments
 # completely deprecate manager_path without breaking things
 def getListOfFiles(filelist, selection, manager_path="", analysis=""):
-    if manager_path is "":
+    if manager_path == "":
         manager_path = getManagerPath()
     print('the main manager path------> ',  str(manager_path))
     data_path = "%s/%s/FileInfo" % (manager_path, getManagerName())
@@ -250,17 +255,22 @@ def getXrdRedirector(filepath=None):
         return usredir
     return globalredir
 
-def fillTemplatedFile(template_file_name, out_file_name, template_dict):
-    with open(template_file_name, "r") as templateFile:
-        source = string.Template(templateFile.read())
-        result = source.substitute(template_dict)
+def fillTemplatedFile(template_files, out_file_name, template_dict):
+     result = ""
+     for template in template_files:
+         if not os.path.isfile(template):
+             raise ValueError("Template file %s is not a valid file!" % template)
+         with open(template, "r") as templateFile:
+             source = string.Template(templateFile.read())
+         filled = source.substitute(template_dict)
+         result += filled
     with open(out_file_name, "w") as outFile:
         outFile.write(result)
         print('=====================================print the results related to datacard production======================================')
         print(result)
 
 def getListOfFilesWithXSec(filelist, manager_path="", selection="ntuples"):
-    if manager_path is "":
+    if manager_path == "":
         manager_path = getManagerPath()
     data_path = "%s/%s/FileInfo" % (manager_path, getManagerName())
     files = getListOfFiles(filelist, selection, manager_path)
@@ -282,7 +292,7 @@ def getListOfFilesWithXSec(filelist, manager_path="", selection="ntuples"):
     return info
 
 def getListOfFilesWithPath(filelist, analysis, selection, das=True, manager_path=""):
-    if manager_path is "":
+    if manager_path == "":
         manager_path = getManagerPath()
     data_path = "%s/%s/FileInfo" % (manager_path, getManagerName())
     files = getListOfFiles(filelist, selection, manager_path, analysis)
@@ -344,7 +354,7 @@ def getConfigFileName(config_file_name):
             config_file_name)
 
 def getInputFilesPath(sample_name, selection, analysis, manager_path=""):
-    if manager_path is "":
+    if manager_path == "":
         manager_path = getManagerPath()
     if ".root" in sample_name:
         logging.info("Using simple file %s" % sample_name)

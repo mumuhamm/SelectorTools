@@ -1,0 +1,1 @@
+pdfNNPDF31_${w_sample}        shape   1

@@ -1,0 +1,3 @@
+QCDscale_muR_${w_sample} shape   1                
+QCDscale_muF_${w_sample} shape   1                
+QCDscale_muRmuF_${w_sample}     shape   1 

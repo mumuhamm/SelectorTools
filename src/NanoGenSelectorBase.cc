@@ -32,11 +32,15 @@ void NanoGenSelectorBase::Init(TTree *tree)
 
     std::cout << "INFO: doLHE = " << doLHE_ << " doPrefsr " << doPreFSR_ << std::endl;
     std::cout << "INFO: doBareLeptons = "<<doBareLeptons_<<"\n";
-    std::cout << " When the Minnlo's are produced with high weight: suppress W = "<< weightSuppress_ <<"\n"; 
+     if (name_.find("minnlo") != std::string::npos && !weightSuppress_ && !weightSignOnly_)
+         std::cout << "WARNING: You should use wSuppress != 0 or wSignOnly to suppress huge weights in MiNNLO\n";
+     else if (weightSuppress_)
+         std::cout << "INFO: wSuppress = " << weightSuppress_ << std::endl;
     if (doBorn_)
         systematics_[BornParticles] = "born";
-    if (doBareLeptons_)
+    if (doBareLeptons_){
         systematics_[BareLeptons] = "bare";
+    }
     if (doPreFSR_)
         systematics_[PreFSRLeptons] = "prefsr";
     if (doLHE_)

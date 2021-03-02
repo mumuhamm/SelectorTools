@@ -32,12 +32,19 @@ void WGenSelector::Init(TTree *tree)
     doMassVar_ = massVar != nullptr && massVar->GetVal();
     TParameter<bool>* muonVar = (TParameter<bool>*) GetInputList()->FindObject("muonVar");
     doMuonVar_ = muonVar != nullptr && muonVar->GetVal();
-
+    //Have to read this here as well, otherwise you don't know until after calling NanoGenSelectorBase::Init
+     TParameter<bool>* barePart = (TParameter<bool>*) GetInputList()->FindObject("bare");
+     doBareLeptons_ = barePart != nullptr && barePart->GetVal();
+    
     if (doMassVar_) {
         systematics_[mWShift50MeVUp] = "mWBWShift50MeVUp";
         systematics_[mWShift50MeVDown] = "mWBWShift50MeVDown";
         systematics_[mWShift100MeVUp] = "mWBWShift100MeVUp";
         systematics_[mWShift100MeVDown] = "mWBWShift100MeVDown";
+        if (doBareLeptons_) {
+             systematics_[BareLeptons_muonScaleUp] = "bare_CMS_scale_mUp";
+             systematics_[BareLeptons_muonScaleDown] = "bare_CMS_scale_mDown";
+         }
     }
 
     if (doMuonVar_) {
@@ -55,7 +62,7 @@ void WGenSelector::Init(TTree *tree)
     nLeptons_ = 1;
     nNeutrinos_ = 1;
     doPhotons_ = true;
-    doBareLeptons_ = true;    
+       
     // Chose by MC sample
     if (name_.find("nnlops") != std::string::npos) {
         MV_GEN_ = 80398.0;
@@ -86,11 +93,11 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
             TRandom3 gauss;
             ptl_smear = l.pt()*gauss.Gaus(1, 0.01);
         }
-        else if (variation.first == muonScaleUp) {
+        else if (variation.first == muonScaleUp || variation.first == BareLeptons_muonScaleUp) {
             leptons.at(0).setP4(makeGenParticle(l.pdgId(), l.status(), l.pt()*1.001, l.eta(), l.phi(), l.mass()).polarP4());
             SetComposite();
         }
-        else if (variation.first == muonScaleDown) {
+        else if (variation.first == muonScaleDown || variation.first == BareLeptons_muonScaleDown) {
             leptons.at(0).setP4(makeGenParticle(l.pdgId(), l.status(), l.pt()*1./1.001, l.eta(), l.phi(), l.mass()).polarP4());
             SetComposite();
         }
@@ -131,9 +138,9 @@ void WGenSelector::LoadBranchesNanoAOD(Long64_t entry, SystPair variation) {
     }
     else if (variation.first == mWShift50MeVDown)
         weight = cenWeight*breitWignerWeight(-50.);
-    else if (variation.first == mWShift100MeVUp)
+    else if (variation.first == mWShift100MeVUp || variation.first == BareLeptons_mWShift100MeVUp)
         weight = cenWeight*breitWignerWeight(100.);
-    else if (variation.first == mWShift100MeVDown)
+    else if (variation.first == mWShift100MeVDown || variation.first == BareLeptons_mWShift100MeVDown)
         weight = cenWeight*breitWignerWeight(-100.);
 
     if (leptons.size() > 0 && std::abs(leptons.at(0).pdgId()) == 11) {

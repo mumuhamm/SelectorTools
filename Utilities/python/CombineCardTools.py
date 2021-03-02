@@ -32,6 +32,7 @@ class CombineCardTools(object):
         self.theoryVariations = {}
         self.extraCardVars = ""
         self.cardGroups = ""
+        self.customizeCards = []
         self.addOverflow = False
 
     def setPlotGroups(self, xsecMap):
@@ -48,6 +49,12 @@ class CombineCardTools(object):
 
     def setRemoveZeros(self, removeZeros):
         self.removeZeros = removeZeros
+
+    def addCustomizeCard(self, customize):
+         if not os.path.isfile(customize):
+             raise ValueError("Did not find customize cards %s" % customize)
+         self.customizeCards.append(customize)
+         return len(open(customize).readlines())
 
     def setUnrolled(self, binsx, binsy):
         self.isUnrolledFit = True
@@ -324,6 +331,7 @@ class CombineCardTools(object):
                     if self.isUnrolledFit:
                         pdfFunction = pdfFunction.replace("get", "getTransformed3D")
                         args = args[0:1] + [HistTools.makeUnrolledHist, [self.unrolledBinsX, self.unrolledBinsY]] + args[1:]
+                    print(args)
                     updatePdfs = getattr(HistTools, pdfFunction)(*args)
                     pdfHists += updatePdfs
 
@@ -458,7 +466,9 @@ class CombineCardTools(object):
         outputCard = self.templateName.split("/")[-1].format(channel=chan, label=label) 
         outputCard = outputCard.replace("template", outlabel)
         outputCard = outputCard.replace("__", "_")
-        ConfigureJobs.fillTemplatedFile(self.templateName.format(channel=chan, label=label),
+        templates = [self.templateName] + self.customizeCards
+        ConfigureJobs.fillTemplatedFile(
+             [x.format(channel=chan, label=label) for x in templates],
             "/".join([self.outputFolder, outputCard]),
             chan_dict
         )
