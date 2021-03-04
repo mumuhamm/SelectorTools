@@ -189,11 +189,11 @@ def getListOfHDFSFiles(file_path):
 def getListOfFiles(filelist, selection, manager_path="", analysis=""):
     if manager_path == "":
         manager_path = getManagerPath()
-    print('the main manager path------> ',  str(manager_path))
+    print("The main manager path =  %s" % manager_path)
     data_path = "%s/%s/FileInfo" % (manager_path, getManagerName())
-    print('the data path -----------> ',  str(data_path))
+    print("The data path =  %s " % data_path)
     group_path = "%s/AnalysisDatasetManager/PlotGroups" % manager_path
-    print('the group path ----------> ', str(group_path))
+    print("The group path = %s" % group_path)
     data_info = UserInput.readAllInfo("/".join([data_path, "data/*"]))
     #print(data_info)
     mc_info = UserInput.readAllInfo("/".join([data_path, "montecarlo/*"]))
@@ -259,15 +259,16 @@ def fillTemplatedFile(template_files, out_file_name, template_dict):
      result = ""
      for template in template_files:
          if not os.path.isfile(template):
+             print(template)
              raise ValueError("Template file %s is not a valid file!" % template)
          with open(template, "r") as templateFile:
              source = string.Template(templateFile.read())
          filled = source.substitute(template_dict)
          result += filled
-    with open(out_file_name, "w") as outFile:
-        outFile.write(result)
-        print('=====================================print the results related to datacard production======================================')
-        print(result)
+         with open(out_file_name, "w") as outFile:
+             outFile.write(result)
+             print('=====================================print the results related to datacard production======================================')
+             print(result)
 
 def getListOfFilesWithXSec(filelist, manager_path="", selection="ntuples"):
     if manager_path == "":

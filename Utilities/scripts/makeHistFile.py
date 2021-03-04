@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 import subprocess

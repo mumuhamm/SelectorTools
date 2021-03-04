@@ -2,7 +2,7 @@
 import ROOT
 import glob
 import datetime
-import ConfigureJobs, OutputTools
+from . import ConfigureJobs, OutputTools
 import sys
 import os
 import multiprocessing
@@ -136,7 +136,7 @@ class SelectorDriver(object):
             raise ValueError("%s is not a valid file." % list_of_files)
         filelist = [f.split("#")[0].strip() for f in open(list_of_files).readlines()]
         # Remove empty/commented lines
-        filelist = filter(lambda  x: len(x) > 2, filelist)
+        filelist = list(filter(lambda  x: len(x) > 2, filelist))
         nPerJob = int(nPerJob)
         if nPerJob < 1:
             raise ValueError("Number of files per job must be >= 1.")
@@ -199,9 +199,9 @@ class SelectorDriver(object):
 
     def expandDatasetFilePaths(self, nsplits):
         nFiles = 0 
-        for dataset, file_path in self.datasets.iteritems():
+        for dataset, file_path in self.datasets.items():
             maxPerSet = self.maxFiles/len(self.datasets) 
-            if dataset == self.datasets.keys()[-1]:
+            if dataset == list(self.datasets.keys())[-1]:
                 maxPerSet = self.maxFiles-nFiles
             files = []
             for f in file_path:
@@ -216,7 +216,7 @@ class SelectorDriver(object):
             if self.numCores > 1:
                 self.processParallelByDataset(self.datasets, chan)
             else: 
-                for dataset, file_path in self.datasets.iteritems():
+                for dataset, file_path in self.datasets.items():
                     self.processDataset(dataset, file_path, chan)
         if len(self.channels) > 1 and self.numCores > 1:
             tempfiles = [self.outfile_name.replace(".root", "_%s.root" % c) for c in self.channels]
@@ -293,7 +293,10 @@ class SelectorDriver(object):
                 else:
                     dataset_list.Add(sumweights_hist.Clone())
             OutputTools.writeOutputListItem(dataset_list, self.current_file)
+            print("why the dataset list is %s is invalid? " % dataset_list)
             map(lambda x: x.Delete(), dataset_list)
+            for f in dataset_list: 
+                 f.Delete()
             del dataset_list
         del output_list
 
@@ -325,26 +328,27 @@ class SelectorDriver(object):
         return ("%s/ntuple" % channel) if self.ntupleType == "UWVV" else "Events"
 
     def combineParallelFiles(self, tempfiles, chan):
-        tempfiles = filter(os.path.isfile, tempfiles)
+        tempfiles = list(filter(os.path.isfile, tempfiles))
         outfile = self.outfile_name
         if chan != "Inclusive":
             outfile = self.outfile_name.replace(".root", "_%s.root" % chan)
         rval = subprocess.call(["hadd", "-k", "-f", "-j", str(self.numCores), outfile] + tempfiles)
         if rval == 0:
-            map(os.remove, tempfiles)
+            for f in tempfiles: os.remove(f)
         else:
             raise RuntimeError("Failed to collect data from parallel run")
 
     def processParallelByDataset(self, datasets, chan):
         self.expandDatasetFilePaths(self.numCores)
-        expanded_datasets = [[d, f, chan] for d, files in datasets.iteritems() for f in files]
+        expanded_datasets = [[d, f, chan] for d, files in datasets.items() for f in files]
         logging.debug(expanded_datasets)
         p = multiprocessing.Pool(processes=self.numCores)
-        tempfiles = glob.glob(self.tempfileName().replace("MainProcess", "PoolWorker*"))
-        map(os.remove, tempfiles)
+        tempfiles = glob.glob(self.tempfileName().replace("MainProcess", "*PoolWorker*"))
+        for f in tempfiles:
+             os.remove(f)
         p.map(self, expanded_datasets)
         # Store arrays in temp files, since it can get way too big to keep around in memory
-        tempfiles = glob.glob(self.tempfileName().replace("MainProcess", "PoolWorker*"))
+        tempfiles = glob.glob(self.tempfileName().replace("MainProcess", "*PoolWorker*"))
         p.close()
         self.combineParallelFiles(tempfiles, chan)
 
@@ -391,8 +395,8 @@ class SelectorDriver(object):
     # You can use filenum to index the files and sum separately, but it's not necessary
     def fillSumweightsHist(self, rtfile, filenum=1):
         sumWeightsType = "fromTree"
-        weightSignOnly = filter(lambda x: "wSignOnly" in x.GetName(), self.inputs)
-        wSuppress = filter(lambda x: "wSuppress" in x.GetName(), self.inputs)
+        weightSignOnly = list(filter(lambda x: "wSignOnly" in x.GetName(), self.inputs))
+        wSuppress = list(filter(lambda x: "wSuppress" in x.GetName(), self.inputs))
         weightSignOnly = weightSignOnly[0].GetVal() if weightSignOnly else False
         wSuppress = wSuppress[0].GetVal() if wSuppress else 0
 
