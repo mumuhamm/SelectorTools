@@ -293,8 +293,8 @@ class SelectorDriver(object):
                 else:
                     dataset_list.Add(sumweights_hist.Clone())
             OutputTools.writeOutputListItem(dataset_list, self.current_file)
-            print("why the dataset list is %s is invalid? " % dataset_list)
-            map(lambda x: x.Delete(), dataset_list)
+            #print("why the dataset list is %s is invalid? " % dataset_list)
+            #map(lambda x: x.Delete(), dataset_list)
             for f in dataset_list: 
                  f.Delete()
             del dataset_list
